@@ -23,6 +23,7 @@ import { useTrainStore } from '../store/useTrainStore';
 import { useToastStore } from './Toast';
 import type { Route } from '../types';
 import { BookingButton } from './BookingButton';
+import { routeToBookingParams, openOfficialBooking, openBooking } from '../lib/booking';
 
 // ═══════════════════════════════════════
 // Constantes
@@ -179,7 +180,8 @@ export const InterrailPlanner = () => {
     const {
         interrailStops, addInterrailStop, removeInterrailStop,
         reorderInterrailStops, setInterrailStops, clearInterrailStops,
-        interrailRouteMode: routeMode, toggleInterrailRouteMode: toggleRouteMode, userProfile
+        interrailRouteMode: routeMode, toggleInterrailRouteMode: toggleRouteMode,
+        setInterrailRouteMode
     } = useTrainStore();
     const { addToast } = useToastStore();
 
@@ -294,10 +296,6 @@ export const InterrailPlanner = () => {
         removeInterrailStop(stationId);
     }, [removeInterrailStop]);
 
-    const toggleRouteModeHandler = useCallback(() => {
-        toggleRouteMode();
-    }, [toggleRouteMode]);
-
     const handleMapStationClick = useCallback((stationId: string) => {
         if (!routeMode) return;
         if (interrailStopSet.has(stationId)) {
@@ -314,15 +312,25 @@ export const InterrailPlanner = () => {
         const alts = generateAlternatives(selectedStationIds, totalDays, 5);
         setAlternatives(alts);
         setActiveTab('result');
-    }, [selectedStationIds, totalDays, currentWeights]);
+        setInterrailRouteMode(true); // activa mapa neon automáticamente
+    }, [selectedStationIds, totalDays, currentWeights, setInterrailRouteMode]);
 
     const loadPreset = useCallback((preset: typeof POPULAR_ROUTES[0]) => {
         const validStops = preset.stops.filter(id => stations.some(s => s.id === id));
+        const stopIds = validStops.map(id => id);
         setInterrailStops(validStops.map(id => ({ stationId: id, addedFrom: 'planner' as const })));
         setTotalDays(preset.days);
         setShowPresets(false);
-        setResult(null);
-    }, [setInterrailStops]);
+        // Auto-optimizar y activar mapa neon
+        if (stopIds.length >= 2) {
+            const itinerary = optimizeInterrail(stopIds, preset.days, currentWeights);
+            setResult(itinerary);
+            const alts = generateAlternatives(stopIds, preset.days, 5);
+            setAlternatives(alts);
+            setActiveTab('result');
+            setInterrailRouteMode(true);
+        }
+    }, [setInterrailStops, currentWeights, setInterrailRouteMode]);
 
     const randomizeRoute = useCallback(() => {
         const hubs = stations.filter(s => (s.tier ?? 4) <= 2);
@@ -372,17 +380,6 @@ export const InterrailPlanner = () => {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Route mode toggle */}
-                        <button
-                            onClick={toggleRouteModeHandler}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${routeMode
-                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                                : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
-                            }`}
-                        >
-                            <MousePointerClick size={14} />
-                            {routeMode ? 'Seleccionando...' : 'Empezar Ruta'}
-                        </button>
                         <button onClick={randomizeRoute} className="p-2 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition-all border border-white/10" title="Ruta aleatoria">
                             <Shuffle size={16} />
                         </button>
@@ -739,29 +736,15 @@ export const InterrailPlanner = () => {
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    if (!userProfile.isRegistered) {
-                                                        addToast("Registro requerido para reservar la ruta completa.", "info");
-                                                        return;
-                                                    }
-                                                    // Open all booking links for the route
-                                                    if (result?.legs) {
-                                                        result.legs.forEach((leg, idx) => {
-                                                            setTimeout(() => {
-                                                                const params = {
-                                                                    fromCity: leg.from.city,
-                                                                    toCity: leg.to.city,
-                                                                    fromStationName: leg.from.name,
-                                                                    toStationName: leg.to.name,
-                                                                    departureDate: startDate,
-                                                                    operator: leg.route.operator,
-                                                                    userEmail: userProfile.email,
-                                                                };
-                                                                // Note: Using Trainline builder logic inline for simplicity here since we want full automation for all legs
-                                                                const searchUrl = `https://www.thetrainline.com/book/results?origin=${encodeURIComponent(params.fromCity)}&destination=${encodeURIComponent(params.toCity)}&outwardDate=${startDate}T08:00:00&journeySearchType=single&utm_source=EASYTRAIN_AFFILIATE_ID&utm_medium=affiliate&utm_campaign=easytrain&utm_term=${encodeURIComponent(userProfile.email || '')}`;
-                                                                window.open(searchUrl, '_blank');
-                                                            }, idx * 1000);
-                                                        });
-                                                    }
+                                                    if (!result?.legs) return;
+                                                    result.legs.forEach((leg, idx) => {
+                                                        setTimeout(() => {
+                                                            const params = routeToBookingParams(leg.route, startDate);
+                                                            const opened = openOfficialBooking(params);
+                                                            if (!opened) openBooking(params, 'trainline');
+                                                        }, idx * 800);
+                                                    });
+                                                    addToast(`Abriendo ${result.legs.length} reservas...`, 'success');
                                                 }}
                                                 className="flex-1 py-2 rounded-xl bg-emerald-500/10 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 flex items-center justify-center gap-1.5 transition-colors border border-emerald-500/20"
                                             >

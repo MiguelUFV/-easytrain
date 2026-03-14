@@ -5,7 +5,7 @@ import {
     Repeat, ChevronDown, ChevronUp, Sparkles, Route as RouteIcon,
     Minus, Lightbulb, Trash2, Shuffle, Copy,
     Check, Zap, Globe, Sun, Snowflake, CloudRain, Flower2,
-    MousePointerClick, RotateCcw, TrendingUp, Award
+    MousePointerClick, RotateCcw, TrendingUp, Award, Leaf, Waves, Trees, Landmark
 } from 'lucide-react';
 import { EuropeMap } from './EuropeMap';
 import { stations } from '../lib/mockData';
@@ -99,6 +99,32 @@ function calculatePassRecommendation(numStops: number, _totalDays: number, total
 // ═══════════════════════════════════════
 // Componentes de Soporte
 // ═══════════════════════════════════════
+
+const MoodTags = ({ stops, legs }: { stops: string[], legs: any[] }) => {
+    const tags = useMemo(() => {
+        const result = [];
+        const hasFerry = legs.some(l => l.route.type === 'Ferry');
+        const hasHighSpeed = legs.some(l => l.route.type === 'HighSpeed');
+        const numStops = stops.length;
+        
+        if (hasFerry) result.push({ label: '🚢 Marítima', icon: <Waves size={10} />, color: 'text-cyan-400', bg: 'bg-cyan-500/10' });
+        if (hasHighSpeed) result.push({ label: '⚡ Ultra Rápida', icon: <Zap size={10} />, color: 'text-indigo-400', bg: 'bg-indigo-500/10' });
+        if (numStops > 5) result.push({ label: '🏛️ Cultural', icon: <Landmark size={10} />, color: 'text-amber-400', bg: 'bg-amber-500/10' });
+        if (numStops < 4 && !hasHighSpeed) result.push({ label: '🌲 Relax', icon: <Trees size={10} />, color: 'text-green-400', bg: 'bg-green-500/10' });
+        
+        return result;
+    }, [stops, legs]);
+
+    return (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+            {tags.map((tag, i) => (
+                <div key={i} className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${tag.bg} ${tag.color} border border-white/5`}>
+                    {tag.icon} {tag.label}
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const TipsAIPanel = ({ stationIds, totalDays }: { stationIds: string[], totalDays: number }) => {
     const tips = useMemo(() => {
@@ -725,9 +751,11 @@ export const InterrailPlanner = () => {
                                         <div className="grid grid-cols-2 gap-2">
                                             <StatCard label="Precio" value={`${result.totalPrice}€`} icon={<Euro size={14} />} color="text-green-400" />
                                             <StatCard label="Duración" value={formatMinutes(result.totalDurationMin)} icon={<Clock size={14} />} color="text-blue-400" />
-                                            <StatCard label="Transbordos" value={String(result.totalTransfers)} icon={<Repeat size={14} />} color="text-amber-400" />
+                                            <StatCard label="Eco-Score" value={`-${Math.round(result.totalDurationMin * 0.12)}kg CO2`} icon={<Leaf size={14} />} color="text-emerald-400" tooltip="Ahorro vs Avión" />
                                             <StatCard label="Score" value={result.score.toFixed(2)} icon={<Sparkles size={14} />} color="text-indigo-400" />
                                         </div>
+
+                                        <MoodTags stops={selectedStationIds} legs={result.legs} />
 
                                         {/* Actions */}
                                         <div className="flex gap-2">
@@ -891,12 +919,17 @@ export const InterrailPlanner = () => {
 // Sub-componentes
 // ═══════════════════════════════════════
 
-const StatCard = ({ label, value, icon, color }: { label: string; value: string; icon: React.ReactNode; color: string }) => (
-    <div className="glass-card p-3">
+const StatCard = ({ label, value, icon, color, tooltip }: { label: string; value: string; icon: React.ReactNode; color: string; tooltip?: string }) => (
+    <div className="glass-card p-3 relative group">
         <div className={`flex items-center gap-1.5 mb-1 ${color}`}>
             {icon}
             <span className="text-[9px] uppercase tracking-wider font-bold">{label}</span>
         </div>
         <div className="text-lg font-black">{value}</div>
+        {tooltip && (
+            <div className="absolute -top-1 px-1.5 py-0.5 bg-black/80 rounded text-[7px] text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                {tooltip}
+            </div>
+        )}
     </div>
 );

@@ -21,6 +21,7 @@ const getTypeColor = (type: string): string => {
         case 'Intercity': return '#22d3ee';
         case 'Regional': return '#a3e635';
         case 'NightTrain': return '#c084fc';
+        case 'Ferry': return '#00f3ff';
         default: return '#6366f1';
     }
 };
@@ -31,6 +32,7 @@ const getTypeLabel = (type: string): string => {
         case 'Intercity': return 'Intercity';
         case 'Regional': return 'Regional';
         case 'NightTrain': return 'Nocturno';
+        case 'Ferry': return 'Ferry (Trayecto Marítimo)';
         default: return type;
     }
 };
@@ -43,7 +45,7 @@ const formatDuration = (dep: string, arr: string): string => {
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
 };
 
-const MovingTrain = ({ path, color, duration = 10 }: { path: [number, number][], color: string, duration?: number }) => {
+const MovingTrain = ({ path, color, duration = 10, isFerry = false }: { path: [number, number][], color: string, duration?: number, isFerry?: boolean }) => {
     const [pos, setPos] = useState<[number, number] | null>(null);
     
     useEffect(() => {
@@ -83,23 +85,30 @@ const MovingTrain = ({ path, color, duration = 10 }: { path: [number, number][],
     return (
         <CircleMarker 
             center={pos} 
-            radius={4} 
+            radius={isFerry ? 6 : 4} 
             pathOptions={{ 
-                color: '#fff', 
-                fillColor: color, 
+                color: isFerry ? '#00f3ff' : '#fff', 
+                fillColor: isFerry ? '#0e172a' : color, 
                 fillOpacity: 1, 
                 weight: 2,
-                className: 'train-pulse'
+                className: isFerry ? 'ferry-pulse' : 'train-pulse'
             }} 
-        />
+        >
+            {isFerry && (
+                <Tooltip permanent direction="center" className="ship-tooltip">
+                    <span className="text-white text-[10px] drop-shadow-lg">🚢</span>
+                </Tooltip>
+            )}
+        </CircleMarker>
     );
 };
 
-const NeonRoute = ({ path, color, isActive, isInterrail = false }: { 
+const NeonRoute = ({ path, color, isActive, isInterrail = false, isFerry = false }: { 
     path: [number, number][], 
     color: string, 
     isActive?: boolean,
-    isInterrail?: boolean
+    isInterrail?: boolean,
+    isFerry?: boolean
 }) => {
     if (!isActive && !isInterrail) {
         return (
@@ -110,7 +119,8 @@ const NeonRoute = ({ path, color, isActive, isInterrail = false }: {
                     weight: 1.2, 
                     opacity: 0.2, 
                     lineCap: 'round', 
-                    lineJoin: 'round' 
+                    lineJoin: 'round',
+                    dashArray: isFerry ? '4, 8' : undefined
                 }} 
             />
         );
@@ -123,14 +133,51 @@ const NeonRoute = ({ path, color, isActive, isInterrail = false }: {
             {/* Outer glow */}
             <Polyline positions={path} pathOptions={{ color, weight: isActive ? 22 : 12, opacity: 0.12, lineCap: 'round' }} />
             {/* Mid glow */}
-            <Polyline positions={path} pathOptions={{ color, weight: isActive ? 12 : 7, opacity: 0.25, lineCap: 'round' }} />
+            <Polyline positions={path} pathOptions={{ color, weight: isActive ? 12 : 7, opacity: 0.25, lineCap: 'round', dashArray: isFerry ? '6, 12' : undefined }} />
             {/* Core neon line */}
-            <Polyline positions={path} pathOptions={{ color: '#fff', weight: isActive ? 2.5 : 1.5, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }} />
-            <Polyline positions={path} pathOptions={{ color, weight: isActive ? 4.5 : 2.5, opacity: 1, lineCap: 'round', lineJoin: 'round' }} />
+            <Polyline positions={path} pathOptions={{ color: '#fff', weight: isActive ? 2.5 : 1.5, opacity: 0.95, lineCap: 'round', lineJoin: 'round', dashArray: isFerry ? '3, 6' : undefined }} />
+            <Polyline positions={path} pathOptions={{ color, weight: isActive ? 4.5 : 2.5, opacity: 1, lineCap: 'round', lineJoin: 'round', dashArray: isFerry ? '3, 6' : undefined }} />
             
             {/* Moving Train Pulse */}
-            <MovingTrain path={path} color={color} duration={isInterrail ? 15 : 6} />
+            <MovingTrain path={path} color={color} duration={isInterrail ? 15 : 6} isFerry={isFerry} />
         </>
+    );
+};
+
+// ── NEW: Bridge Icon Component ──
+const BridgeMarker = ({ position, name }: { position: [number, number], name: string }) => (
+    <CircleMarker 
+        center={position} 
+        radius={5} 
+        pathOptions={{ color: '#fbbf24', fillColor: '#0f172a', fillOpacity: 1, weight: 2 }}
+    >
+        <Tooltip direction="top" offset={[0, -5]}>
+            <div className="flex items-center gap-1.5 font-bold text-[10px] text-amber-400">
+                🌉 {name}
+            </div>
+        </Tooltip>
+    </CircleMarker>
+);
+
+// ── NEW: Atmospheric Simulation ──
+const AtmosphericOverlay = () => {
+    const map = useMap();
+    const [zoom, setZoom] = useState(map.getZoom());
+    
+    useEffect(() => {
+        const h = () => setZoom(map.getZoom());
+        map.on('zoomend', h);
+        return () => { map.off('zoomend', h); };
+    }, [map]);
+
+    // Only show fog/bruma at high zoom out
+    if (zoom > 6) return null;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none z-[1001] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 via-transparent to-purple-500/5 opacity-50 blur-3xl animate-pulse" />
+            <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-blue-400/10 to-transparent blur-2xl" />
+        </div>
     );
 };
 
@@ -379,6 +426,7 @@ export const EuropeMap = ({
                             path={path}
                             color={color}
                             isActive={isActive}
+                            isFerry={route.type === 'Ferry'}
                         />
                     );
                 })}
@@ -422,6 +470,7 @@ export const EuropeMap = ({
                                 path={fullPath}
                                 color={color}
                                 isActive={true}
+                                isFerry={activeRoute.type === 'Ferry'}
                             />
                             {allPoints.map((pt, idx) => {
                                 const isStart = idx === 0;
@@ -657,7 +706,14 @@ export const EuropeMap = ({
                         </CircleMarker>
                     );
                 })}
+                {/* Atmospheric & Bridge Effects */}
+                <AtmosphericOverlay />
+                <BridgeMarker position={[55.5800, 12.7500]} name="Puente de Öresund" />
+
             </MapContainer>
+
+            {/* Maritime Waves Overlay */}
+            <div className="maritime-waves" />
 
             {/* ═══ OVERLAYS ═══ */}
 

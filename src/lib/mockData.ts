@@ -259,7 +259,7 @@ export const stations: Station[] = [
 // ═══════════════════════════════════════════════════════════════════════
 
 const baseDate = "2026-07-05T08:00:00.000Z";
-type RouteType = 'HighSpeed' | 'Regional' | 'Intercity' | 'NightTrain';
+type RouteType = 'HighSpeed' | 'Regional' | 'Intercity' | 'NightTrain' | 'Ferry';
 let _id = 0;
 
 const R = (
@@ -497,7 +497,7 @@ export const routes: Route[] = [
     R('OSL', 'STO', 7, 300, 55, 'SJ Snabbtåg'),
     R('OSL', 'BRG2', 8, 400, 45, 'VY Bergensbanen', 'Intercity'),
     R('OSL', 'TRD', 9, 390, 50, 'VY Dovrebanen', 'Intercity'),
-    R('STO', 'HEL', 10, 960, 80, 'Viking Line + VR', 'NightTrain'),
+    R('STO', 'HEL', 10, 960, 80, 'Viking Line / Silja Line', 'Ferry'),
     R('HEL', 'TMP', 0, 100, 18, 'VR IC', 'Intercity'),
     R('HEL', 'TKU', 1, 120, 15, 'VR IC', 'Intercity'),
     R('STO', 'MAL2', 2, 270, 40, 'SJ Snabbtåg'),
@@ -509,7 +509,7 @@ export const routes: Route[] = [
     R('VIL', 'RIG', 1, 265, 20, 'Rail Baltica', 'Intercity'),
     R('VIL', 'KAU', 0, 75, 8, 'LTG', 'Regional'),
     R('RIG', 'TAL', 2, 270, 20, 'Rail Baltica', 'Intercity'),
-    R('TAL', 'HEL', 3, 120, 35, 'Tallink Ferry', 'Intercity'),
+    R('TAL', 'HEL', 3, 120, 35, 'Tallink Silja / Eckerö Line', 'Ferry'),
     R('TAL', 'TAR', 0, 140, 12, 'Elron', 'Regional'),
 
     // ══════════════════════════════════════

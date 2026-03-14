@@ -314,7 +314,10 @@ const routeWaypoints: Record<string, Coord[]> = {
     ],
 
     'GEO|NIC': [
-        { lat: 43.7875, lng: 7.7156 },
+        { lat: 43.7744, lng: 7.4975 }, // Menton
+        { lat: 43.8190, lng: 7.7749 }, // Sanremo
+        { lat: 44.0044, lng: 8.1691 }, // Alassio
+        { lat: 44.3079, lng: 8.4811 }, // Savona
     ],
 
 
@@ -406,9 +409,13 @@ const routeWaypoints: Record<string, Coord[]> = {
     ],
 
     'COP|STO': [
-        { lat: 55.6092, lng: 13.0007 },
+        { lat: 55.6092, lng: 13.0007 }, // Malmö
         { lat: 56.6640, lng: 12.8574 },
         { lat: 57.7090, lng: 11.9745 },
+    ],
+
+    'COP|MAL2': [
+        { lat: 55.5800, lng: 12.7500 }, // Öresund Bridge
     ],
 
     'COP|HAM': [
@@ -523,6 +530,18 @@ const routeWaypoints: Record<string, Coord[]> = {
 
 
     // ══════════════ BÁLTICOS ══════════════
+
+    'STO|HEL': [
+        { lat: 59.3300, lng: 18.5000 }, // Salida archipiélago Estocolmo
+        { lat: 59.5000, lng: 19.5000 }, // Mar abierto
+        { lat: 60.0970, lng: 19.9348 }, // Mariehamn (Islas Åland)
+        { lat: 59.9000, lng: 21.0000 }, // Entrada Golfo de Finlandia
+        { lat: 59.8500, lng: 23.0000 }, // Cerca de Hanko
+    ],
+
+    'HEL|TAL': [
+        { lat: 59.8000, lng: 24.8000 }, // Golfo de Finlandia central
+    ],
 
     'RIG|VIL': [
         { lat: 55.7300, lng: 24.3600 },

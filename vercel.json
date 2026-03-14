@@ -1,0 +1,33 @@
+{
+  "rewrites": [
+    { "source": "/api-db/:path*",    "destination": "https://v6.db.transport.rest/:path*" },
+    { "source": "/api-ch/:path*",    "destination": "https://transport.opendata.ch/v1/:path*" },
+    { "source": "/api-irail/:path*", "destination": "https://api.irail.be/:path*" },
+    { "source": "/(.*)",             "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options",  "value": "nosniff" },
+        { "key": "X-Frame-Options",         "value": "DENY" },
+        { "key": "X-XSS-Protection",        "value": "1; mode=block" },
+        { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy",      "value": "camera=(), microphone=(), geolocation=(self)" },
+        { "key": "Strict-Transport-Security","value": "max-age=63072000; includeSubDomains; preload" }
+      ]
+    },
+    {
+      "source": "/api-:api*",
+      "headers": [
+        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=120" }
+      ]
+    },
+    {
+      "source": "/assets/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}

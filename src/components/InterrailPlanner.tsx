@@ -346,7 +346,7 @@ export const InterrailPlanner = () => {
     const loadPreset = useCallback((preset: typeof POPULAR_ROUTES[0]) => {
         const validStops = preset.stops.filter(id => stations.some(s => s.id === id));
         const stopIds = validStops.map(id => id);
-        setInterrailStops(validStops.map(id => ({ stationId: id, addedFrom: 'planner' as const })));
+        setInterrailStops(validStops.map(id => ({ stationId: id, stationName: stations.find(s => s.id === id)?.city ?? id, addedFrom: 'planner' as const })));
         setTotalDays(preset.days);
         setShowPresets(false);
         // Auto-optimizar y activar mapa neon
@@ -368,7 +368,7 @@ export const InterrailPlanner = () => {
             const s = hubs[Math.floor(Math.random() * hubs.length)];
             if (!picked.includes(s.id)) picked.push(s.id);
         }
-        setInterrailStops(picked.map(id => ({ stationId: id, addedFrom: 'planner' as const })));
+        setInterrailStops(picked.map(id => ({ stationId: id, stationName: stations.find(s => s.id === id)?.city ?? id, addedFrom: 'planner' as const })));
         setResult(null);
     }, [setInterrailStops]);
 
@@ -550,20 +550,20 @@ export const InterrailPlanner = () => {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex items-center gap-0.5">
                                                         {i > 0 && (
-                                                            <button onClick={() => reorderInterrailStops(i, i - 1)} className="w-5 h-5 rounded flex items-center justify-center text-gray-600 hover:text-white hover:bg-white/10 transition-colors">
-                                                                <ChevronUp size={10} />
+                                                            <button onClick={() => reorderInterrailStops(i, i - 1)} className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-colors">
+                                                                <ChevronUp size={12} />
                                                             </button>
                                                         )}
                                                         {i < selectedStationIds.length - 1 && (
-                                                            <button onClick={() => reorderInterrailStops(i, i + 1)} className="w-5 h-5 rounded flex items-center justify-center text-gray-600 hover:text-white hover:bg-white/10 transition-colors">
-                                                                <ChevronDown size={10} />
+                                                            <button onClick={() => reorderInterrailStops(i, i + 1)} className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-colors">
+                                                                <ChevronDown size={12} />
                                                             </button>
                                                         )}
                                                         {selectedStationIds.length > 2 && (
-                                                            <button onClick={() => removeStation(id)} className="w-5 h-5 rounded flex items-center justify-center text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                                                                <X size={10} />
+                                                            <button onClick={() => removeStation(id)} className="w-6 h-6 rounded-lg flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                                                                <X size={12} />
                                                             </button>
                                                         )}
                                                     </div>
@@ -624,28 +624,54 @@ export const InterrailPlanner = () => {
                                 {suggestions.length > 0 && !showStationPicker && (
                                     <div className="glass-card p-4">
                                         <button onClick={() => setShowSuggestions(!showSuggestions)} className="w-full flex items-center justify-between mb-2">
-                                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                                                <Lightbulb size={11} /> Siguiente parada sugerida
+                                            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                                                <Lightbulb size={13} /> Siguiente parada sugerida
                                             </h3>
-                                            {showSuggestions ? <ChevronUp size={10} className="text-gray-600" /> : <ChevronDown size={10} className="text-gray-600" />}
+                                            {showSuggestions ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
                                         </button>
                                         <AnimatePresence>
                                             {showSuggestions && (
-                                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-0.5">
+                                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-1">
                                                     {suggestions.slice(0, 5).map((s, i) => {
+                                                        const lastStationId = selectedStationIds[selectedStationIds.length - 1];
+                                                        const lastStation = stations.find(st => st.id === lastStationId);
                                                         return (
-                                                            <button
+                                                            <div
                                                                 key={s.station.id}
-                                                                onClick={() => addStation(s.station.id)}
-                                                                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-amber-500/10 transition-colors text-left"
+                                                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/5 hover:border-amber-500/20 transition-all group"
                                                             >
-                                                                <Plus size={10} className="text-amber-400 flex-shrink-0" />
-                                                                <span className="font-medium text-gray-300 flex-1 truncate">{s.station.city}</span>
-                                                                <div className="flex items-center gap-2 flex-shrink-0">
-                                                                    {i === 0 && <Award size={9} className="text-amber-400" />}
-                                                                    <span className="text-[9px] text-gray-600">{s.routes}r</span>
+                                                                {i === 0 && <Award size={11} className="text-amber-400 flex-shrink-0" />}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="text-xs font-semibold text-gray-200 truncate">{s.station.city}</div>
+                                                                    <div className="text-[9px] text-gray-600">{s.station.country} · {s.routes} rutas</div>
                                                                 </div>
-                                                            </button>
+                                                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                    <button
+                                                                        onClick={() => addStation(s.station.id)}
+                                                                        className="px-2.5 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 text-[10px] font-bold hover:bg-indigo-500/25 transition-colors border border-indigo-500/20"
+                                                                    >
+                                                                        <Plus size={10} className="inline mr-0.5" /> Añadir
+                                                                    </button>
+                                                                    {lastStation && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const params = routeToBookingParams({
+                                                                                    fromStationName: lastStation.city,
+                                                                                    toStationName: s.station.city,
+                                                                                    operator: '',
+                                                                                    type: 'train',
+                                                                                    departureTime: new Date().toISOString(),
+                                                                                    arrivalTime: new Date().toISOString(),
+                                                                                } as Route, startDate);
+                                                                                openBooking(params, 'trainline');
+                                                                            }}
+                                                                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-bold hover:bg-emerald-500/25 transition-colors border border-emerald-500/20"
+                                                                        >
+                                                                            <Euro size={10} className="inline mr-0.5" /> Comprar
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         );
                                                     })}
                                                 </motion.div>
@@ -760,25 +786,25 @@ export const InterrailPlanner = () => {
                                         <MoodTags stops={selectedStationIds} legs={result.legs} />
 
                                         {/* Actions */}
+                                        <button
+                                            onClick={() => {
+                                                if (!result?.legs) return;
+                                                result.legs.forEach((leg, idx) => {
+                                                    setTimeout(() => {
+                                                        const params = routeToBookingParams(leg.route, startDate);
+                                                        const opened = openOfficialBooking(params);
+                                                        if (!opened) openBooking(params, 'trainline');
+                                                    }, idx * 800);
+                                                });
+                                                addToast(`Abriendo ${result.legs.length} reservas...`, 'success');
+                                            }}
+                                            className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-sm font-bold text-white flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-500/20"
+                                        >
+                                            <Euro size={16} /> Reservar Todos los Tramos
+                                        </button>
                                         <div className="flex gap-2">
-                                            <button onClick={copyItinerary} className="flex-1 py-2 rounded-xl bg-white/5 text-xs font-semibold text-gray-400 hover:bg-white/10 hover:text-white flex items-center justify-center gap-1.5 transition-colors border border-white/5">
-                                                {copiedItinerary ? <><Check size={12} className="text-green-400" /> Copiado</> : <><Copy size={12} /> Copiar</>}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (!result?.legs) return;
-                                                    result.legs.forEach((leg, idx) => {
-                                                        setTimeout(() => {
-                                                            const params = routeToBookingParams(leg.route, startDate);
-                                                            const opened = openOfficialBooking(params);
-                                                            if (!opened) openBooking(params, 'trainline');
-                                                        }, idx * 800);
-                                                    });
-                                                    addToast(`Abriendo ${result.legs.length} reservas...`, 'success');
-                                                }}
-                                                className="flex-1 py-2 rounded-xl bg-emerald-500/10 text-xs font-bold text-emerald-400 hover:bg-emerald-500/20 flex items-center justify-center gap-1.5 transition-colors border border-emerald-500/20"
-                                            >
-                                                <Euro size={12} /> Reservar Todo
+                                            <button onClick={copyItinerary} className="flex-1 py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-gray-400 hover:bg-white/10 hover:text-white flex items-center justify-center gap-1.5 transition-colors border border-white/5">
+                                                {copiedItinerary ? <><Check size={12} className="text-green-400" /> Copiado</> : <><Copy size={12} /> Copiar Itinerario</>}
                                             </button>
                                         </div>
 
@@ -843,9 +869,9 @@ export const InterrailPlanner = () => {
                                                                                         <div className="text-[10px] font-medium truncate">{leg.from.city} → {leg.to.city}</div>
                                                                                         <div className="text-[8px] text-gray-600">{leg.route.operator} · {formatMinutes(leg.durationMin)}</div>
                                                                                     </div>
-                                                                                    <div className="flex flex-col items-end gap-1">
+                                                                                    <div className="flex items-center gap-2">
                                                                                         <div className="text-[10px] font-bold text-indigo-400">{leg.route.price ?? 0}€</div>
-                                                                                        <BookingButton route={leg.route as Route} compact className="scale-[0.8] origin-right" />
+                                                                                        <BookingButton route={leg.route as Route} compact />
                                                                                     </div>
                                                                                 </div>
                                                                             ));
@@ -894,8 +920,8 @@ export const InterrailPlanner = () => {
                                         )}
 
                                         {/* Back to config */}
-                                        <button onClick={() => { setActiveTab('config'); setResult(null); }} className="w-full py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-gray-500 hover:bg-white/10 hover:text-white flex items-center justify-center gap-1.5 transition-colors border border-white/5">
-                                            <RotateCcw size={12} /> Modificar ruta
+                                        <button onClick={() => { setActiveTab('config'); setResult(null); }} className="w-full py-3 rounded-xl bg-white/5 text-sm font-bold text-gray-300 hover:bg-white/10 hover:text-white flex items-center justify-center gap-2 transition-colors border border-white/10">
+                                            <RotateCcw size={14} /> Modificar Ruta
                                         </button>
                                     </>
                                 )}

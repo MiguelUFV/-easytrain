@@ -16,14 +16,17 @@ export const Map3D = () => {
     }, [setInterrailRouteMode]);
 
     return (
-        <div className="w-full h-full relative flex overflow-hidden bg-[#0a0a0c]">
+        <div className="w-full h-[calc(100vh-5rem)] relative flex overflow-hidden bg-[#0a0a0c]">
             {/* Map Area */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex-1 relative h-full"
+                className="flex-1 relative"
+                style={{ minHeight: 0 }}
             >
-                <EuropeMap />
+                <div className="absolute inset-0">
+                    <EuropeMap />
+                </div>
             </motion.div>
 
             {/* Sidebar Area */}

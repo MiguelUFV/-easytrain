@@ -1,26 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Train, LayoutDashboard, Calendar, Settings as SettingsIcon,
   Map, Zap, Ticket, Heart, TrendingDown, AlertCircle,
-  Bell, History, User, ChevronRight
+  Bell, History, User, ChevronRight, Loader2
 } from 'lucide-react';
 import { useTrainStore } from './store/useTrainStore';
 import { RouteCard } from './components/RouteCard';
-import { Settings } from './components/Settings';
-import { Map3D } from './components/Map3D';
 import { fetchRoutes, fetchPopularRoutes } from './lib/api';
 import { SearchPanel } from './components/SearchPanel';
-import { InterrailPlanner } from './components/InterrailPlanner';
-import { PriceAlertsPage } from './components/PriceAlertsPage';
-import { TicketsPage } from './components/TicketsPage';
-import { ProfilePage } from './components/ProfilePage';
 import { SearchHistoryPanel, SearchHistoryPage } from './components/SearchHistory';
 import { PriceCalendar } from './components/PriceCalendar';
 import { ToastContainer } from './components/Toast';
 import { OnboardingTour } from './components/OnboardingTour';
 import type { Station, PassengerCounts, Station as StationType } from './types';
+
+// Lazy-loaded heavy pages
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
+const Map3D = lazy(() => import('./components/Map3D').then(m => ({ default: m.Map3D })));
+const InterrailPlanner = lazy(() => import('./components/InterrailPlanner').then(m => ({ default: m.InterrailPlanner })));
+const PriceAlertsPage = lazy(() => import('./components/PriceAlertsPage').then(m => ({ default: m.PriceAlertsPage })));
+const TicketsPage = lazy(() => import('./components/TicketsPage').then(m => ({ default: m.TicketsPage })));
+const ProfilePage = lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
+
+const PageLoader = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+    <Loader2 className="animate-spin text-indigo-400" size={32} />
+  </div>
+);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -450,17 +458,19 @@ export const App = () => {
         <Sidebar />
         <main className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">
           <div className="flex-1 overflow-y-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/map" element={<Map3D />} />
-              <Route path="/interrail" element={<InterrailPlanner />} />
-              <Route path="/tickets" element={<TicketsPage />} />
-              <Route path="/favorites" element={<FavoritesPage />} />
-              <Route path="/alerts" element={<PriceAlertsPage />} />
-              <Route path="/history" element={<SearchHistoryPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-            </Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/map" element={<Map3D />} />
+                <Route path="/interrail" element={<InterrailPlanner />} />
+                <Route path="/tickets" element={<TicketsPage />} />
+                <Route path="/favorites" element={<FavoritesPage />} />
+                <Route path="/alerts" element={<PriceAlertsPage />} />
+                <Route path="/history" element={<SearchHistoryPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Routes>
+            </Suspense>
             <Footer />
           </div>
         </main>

@@ -1,30 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Train, LayoutDashboard, Calendar, Settings as SettingsIcon,
   Map, Zap, Ticket, Heart, TrendingDown, AlertCircle,
-  Bell, History, User, ChevronRight
+  Bell, History, User, ChevronRight, Loader2
 } from 'lucide-react';
 import { useTrainStore } from './store/useTrainStore';
 import { RouteCard } from './components/RouteCard';
-import { Settings } from './components/Settings';
-import { Map3D } from './components/Map3D';
 import { fetchRoutes, fetchPopularRoutes } from './lib/api';
 import { SearchPanel } from './components/SearchPanel';
-import { InterrailPlanner } from './components/InterrailPlanner';
-import { PriceAlertsPage } from './components/PriceAlertsPage';
-import { TicketsPage } from './components/TicketsPage';
-import { ProfilePage } from './components/ProfilePage';
 import { SearchHistoryPanel, SearchHistoryPage } from './components/SearchHistory';
 import { PriceCalendar } from './components/PriceCalendar';
 import { ToastContainer } from './components/Toast';
 import { OnboardingTour } from './components/OnboardingTour';
 import type { Station, PassengerCounts, Station as StationType } from './types';
+import { trackPageView, analytics } from './lib/analytics';
+
+// Lazy-loaded heavy pages
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
+const Map3D = lazy(() => import('./components/Map3D').then(m => ({ default: m.Map3D })));
+const InterrailPlanner = lazy(() => import('./components/InterrailPlanner').then(m => ({ default: m.InterrailPlanner })));
+const PriceAlertsPage = lazy(() => import('./components/PriceAlertsPage').then(m => ({ default: m.PriceAlertsPage })));
+const TicketsPage = lazy(() => import('./components/TicketsPage').then(m => ({ default: m.TicketsPage })));
+const ProfilePage = lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
+
+const PageLoader = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[50vh]">
+    <Loader2 className="animate-spin text-indigo-400" size={32} />
+  </div>
+);
+
+const AnalyticsTracker = () => {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+  return null;
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { routes: storeRoutes, setRoutes, setError, error, addSearchHistory, setInterrailRouteMode } = useTrainStore();
+  const { routes: storeRoutes, setRoutes, setError, error, addSearchHistory, setInterrailRouteMode, interrailStops } = useTrainStore();
   const [calendarFrom, setCalendarFrom] = useState<StationType | null>(null);
   const [calendarTo, setCalendarTo] = useState<StationType | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -68,6 +85,8 @@ const Dashboard = () => {
     // Always update calendar context on new search
     setCalendarFrom(params.fromStation ?? null);
     setCalendarTo(params.toStation ?? null);
+    // Track search in Google Analytics
+    analytics.searchRoute(params.fromStation?.name ?? params.from, params.toStation?.name ?? params.to);
     try {
       const filtered = await fetchRoutes(params.from, params.to, params.departureDate);
       // Single source of truth: store.routes
@@ -251,7 +270,7 @@ const Dashboard = () => {
               <h2 className="text-2xl font-black text-white tracking-tight">Destinos en Tendencia</h2>
               <p className="text-sm text-gray-500 mt-1 font-medium">Las rutas más buscadas esta semana en Europa.</p>
             </div>
-            <button className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-400 hover:text-white transition-all">
+            <button onClick={() => navigate('/map')} className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-400 hover:text-white transition-all">
               Ver todos
             </button>
           </div>
@@ -364,11 +383,20 @@ const Dashboard = () => {
 
           <div className="glass-card p-6">
             <div className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] mb-5">Tu Plan Interrail</div>
-            <div className="space-y-0.5">
-              <TimelineStep active location="Amsterdam" date="15 Julio" />
-              <TimelineStep location="Paris" date="18 Julio" />
-              <TimelineStep location="Barcelona" date="21 Julio" />
-            </div>
+            {interrailStops.length > 0 ? (
+              <div className="space-y-0.5">
+                {interrailStops.map((stop, i) => (
+                  <TimelineStep key={stop.stationId} active={i === 0} location={stop.stationName || stop.stationId} date={`Parada ${i + 1}`} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="text-sm text-gray-500 mb-3">Sin ruta planificada</div>
+                <button onClick={() => navigate('/interrail')} className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 hover:bg-indigo-500/20 transition-all">
+                  Planificar Ruta
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Price Calendar — appears after search */}
@@ -437,21 +465,24 @@ export const App = () => {
 
   return (
     <Router>
+      <AnalyticsTracker />
       <div className="flex flex-col md:flex-row min-h-screen bg-[var(--bg-dark)] text-white">
         <Sidebar />
         <main className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">
           <div className="flex-1 overflow-y-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/map" element={<Map3D />} />
-              <Route path="/interrail" element={<InterrailPlanner />} />
-              <Route path="/tickets" element={<TicketsPage />} />
-              <Route path="/favorites" element={<FavoritesPage />} />
-              <Route path="/alerts" element={<PriceAlertsPage />} />
-              <Route path="/history" element={<SearchHistoryPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-            </Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/map" element={<Map3D />} />
+                <Route path="/interrail" element={<InterrailPlanner />} />
+                <Route path="/tickets" element={<TicketsPage />} />
+                <Route path="/favorites" element={<FavoritesPage />} />
+                <Route path="/alerts" element={<PriceAlertsPage />} />
+                <Route path="/history" element={<SearchHistoryPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+              </Routes>
+            </Suspense>
             <Footer />
           </div>
         </main>
@@ -521,9 +552,9 @@ const Sidebar = () => {
             <span className="text-[11px] font-black uppercase tracking-widest">Premium</span>
           </div>
           <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">Desbloquea ahorros avanzados y sincronización.</p>
-          <button className="w-full py-2 text-[12px] font-bold text-white rounded-xl transition-colors" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
-            Activar Premium
-          </button>
+          <Link to="/interrail" className="block w-full py-2 text-[12px] font-bold text-white rounded-xl transition-colors text-center" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+            Planificar Viaje
+          </Link>
         </div>
       </div>
     </aside>

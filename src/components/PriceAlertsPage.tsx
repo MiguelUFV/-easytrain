@@ -4,6 +4,7 @@ import { Bell, Plus, Trash2, CheckCircle, TrendingDown, X } from 'lucide-react';
 import { useTrainStore } from '../store/useTrainStore';
 import { fetchStations } from '../lib/api';
 import type { Station } from '../types';
+import { analytics } from '../lib/analytics';
 
 // Simple station search mini-component for the form
 const MiniStationSearch = ({ placeholder, onSelect }: { placeholder: string; onSelect: (s: Station) => void }) => {
@@ -59,6 +60,7 @@ export const PriceAlertsPage = () => {
             toStationName: to.name,
             targetPrice: parseFloat(targetPrice),
         });
+        analytics.createPriceAlert(from.name, to.name, parseFloat(targetPrice));
         setFrom(null);
         setTo(null);
         setTargetPrice('');

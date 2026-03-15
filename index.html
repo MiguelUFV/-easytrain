@@ -2,11 +2,41 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="EasyTrain — Descubre y reserva las mejores rutas de tren por Europa con ahorro inteligente." />
-    <meta name="theme-color" content="#0a0a0c" />
     <title>EasyTrain — Rutas de Tren por Europa</title>
+    <meta name="description" content="Descubre y reserva las mejores rutas de tren por Europa. Compara precios, planifica tu Interrail y viaja de forma inteligente." />
+    <meta name="theme-color" content="#0a0a0c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="EasyTrain" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="EasyTrain — Rutas de Tren por Europa" />
+    <meta property="og:description" content="Compara precios, planifica tu Interrail y reserva trenes por toda Europa de forma inteligente." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://easytrain.vercel.app" />
+    <meta property="og:site_name" content="EasyTrain" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EasyTrain — Rutas de Tren por Europa" />
+    <meta name="twitter:description" content="Compara precios, planifica tu Interrail y reserva trenes por toda Europa." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <!-- Favicon & PWA -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
   </head>
   <body>
     <div id="root"></div>

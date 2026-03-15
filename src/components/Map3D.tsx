@@ -16,14 +16,17 @@ export const Map3D = () => {
     }, [setInterrailRouteMode]);
 
     return (
-        <div className="w-full h-full relative flex overflow-hidden bg-[#0a0a0c]">
+        <div className="w-full h-[calc(100vh-5rem)] relative flex overflow-hidden bg-[#0a0a0c]">
             {/* Map Area */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex-1 relative h-full"
+                className="flex-1 relative"
+                style={{ minHeight: 0 }}
             >
-                <EuropeMap />
+                <div className="absolute inset-0">
+                    <EuropeMap />
+                </div>
             </motion.div>
 
             {/* Sidebar Area */}
@@ -42,7 +45,14 @@ export const Map3D = () => {
                                 Resumen del Viaje
                             </h2>
                             <div className="flex gap-2">
-                                <button className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
+                                <button onClick={() => {
+                                    const text = `${activeRoute.fromStationName ?? activeRoute.fromStationId} → ${activeRoute.toStationName ?? activeRoute.toStationId} · ${activeRoute.operator} · ${activeRoute.price != null ? activeRoute.price + '€' : 'N/A'}`;
+                                    if (navigator.share) {
+                                        navigator.share({ title: 'EasyTrain Ruta', text });
+                                    } else {
+                                        navigator.clipboard.writeText(text);
+                                    }
+                                }} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
                                     <Share2 size={18} />
                                 </button>
                                 <button
@@ -65,7 +75,7 @@ export const Map3D = () => {
                                     <div className="text-xs text-gray-400">{activeRoute.type} · {activeRoute.lineName}</div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-lg font-black text-white">{activeRoute.price} €</div>
+                                    <div className="text-lg font-black text-white">{activeRoute.price != null ? `${activeRoute.price} €` : 'N/A'}</div>
                                     <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Tarifa Base</div>
                                 </div>
                             </div>

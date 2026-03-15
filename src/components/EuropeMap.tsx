@@ -390,7 +390,8 @@ export const EuropeMap = ({
         if (interrailStopIds.has(stationId)) {
             removeInterrailStop(stationId);
         } else {
-            addInterrailStop({ stationId, addedFrom: 'map' });
+            const s = stations.find(st => st.id === stationId);
+            addInterrailStop({ stationId, stationName: s?.name ?? s?.city ?? stationId, addedFrom: 'map' });
         }
     }, [interrailRouteMode, interrailStopIds, addInterrailStop, removeInterrailStop]);
 
@@ -911,7 +912,7 @@ export const EuropeMap = ({
                                         {suggestions.slice(0, 3).map(s => (
                                             <button
                                                 key={s.station.id}
-                                                onClick={() => addInterrailStop({ stationId: s.station.id, addedFrom: 'map' })}
+                                                onClick={() => addInterrailStop({ stationId: s.station.id, stationName: s.station.name ?? s.station.city ?? s.station.id, addedFrom: 'map' })}
                                                 className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-amber-500/10 transition-colors text-left"
                                             >
                                                 <Plus size={10} className="text-amber-400 flex-shrink-0" />

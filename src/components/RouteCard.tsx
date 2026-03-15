@@ -10,6 +10,7 @@ import { useToastStore } from './Toast.tsx';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookingButton } from './BookingButton';
+import { analytics } from '../lib/analytics';
 
 interface Props {
     route: Route;
@@ -100,6 +101,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                             e.stopPropagation();
                             toggleFavorite(route);
                             const wasFavorite = favorites.some(r => r.id === route.id);
+                            if (!wasFavorite) analytics.addFavorite(route.id);
                             addToast(wasFavorite ? 'Eliminado de favoritos' : 'Añadido a favoritos', wasFavorite ? 'info' : 'success');
                         }}
                         className={`p-2 rounded-xl transition-all ${

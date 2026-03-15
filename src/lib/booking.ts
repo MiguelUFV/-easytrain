@@ -27,49 +27,56 @@ const OFFICIAL_BOOKING: Record<string, (p: BookingParams) => string> = {
 
     // 🇩🇪 Alemania — DB (Deutsche Bahn)
     'db': (p) => {
-        const base = 'https://www.bahn.de/buchung/start.form';
         const params = new URLSearchParams({
-            'reiseplan.verbindungSuche.reiseParameter.abfahrtsOrt': p.fromStationName,
-            'reiseplan.verbindungSuche.reiseParameter.ankunftsOrt': p.toStationName,
-            'reiseplan.verbindungSuche.reiseParameter.abfahrt.datum': p.departureDate,
-            'reiseplan.verbindungSuche.reiseParameter.abfahrt.zeit': p.departureTime ?? '08:00',
-            'reiseplan.verbindungSuche.reiseParameter.anzahlErwachsene': String(p.passengers ?? 1),
+            'S': p.fromStationName,
+            'Z': p.toStationName,
+            'date': p.departureDate,
+            'time': p.departureTime ?? '08:00',
+            'travellers': String(p.passengers ?? 1),
         });
-        return `${base}?${params}`;
+        return `https://int.bahn.de/en/buchung/fahrplan/suche#?${params}`;
     },
 
     // 🇫🇷 Francia — SNCF / TGV
     'sncf': (p) => {
-        const base = 'https://www.sncf-connect.com/app/train/search';
         const params = new URLSearchParams({
             origin:      p.fromStationName,
             destination: p.toStationName,
-            outwardDate: p.departureDate,
+            outwardDate: `${p.departureDate}T${p.departureTime ?? '08:00'}:00`,
             passengers:  String(p.passengers ?? 1),
         });
-        return `${base}?${params}`;
+        return `https://www.sncf-connect.com/app/home/search?${params}`;
     },
     'tgv':   (p) => OFFICIAL_BOOKING['sncf'](p),
-    'ouigo': (_p) => 'https://www.ouigo.com/es/seleccionar-ruta',
+    'ouigo': (p) => `https://www.ouigo.com/es/búsqueda?origin=${encodeURIComponent(p.fromStationName)}&destination=${encodeURIComponent(p.toStationName)}&date=${p.departureDate}`,
 
     // 🇪🇸 España — Renfe / AVE
     'renfe': (p) => {
-        const base = 'https://www.renfe.com/es/es/planifica-tu-viaje/buscador-de-billetes.html';
-        const params = new URLSearchParams({
-            tipoBusqueda: 'A',
-            origen:      p.fromStationName,
-            destino:     p.toStationName,
-            fechaIda:    p.departureDate,
-            adultos:     String(p.passengers ?? 1),
-            ninos:       '0',
-        });
-        return `${base}?${params}`;
+        const [y, m, d] = p.departureDate.split('-');
+        const renfeDate = `${d}/${m}/${y}`;
+        return `https://www.renfe.com/es/es/viajar/informacion-util/horarios?O=${encodeURIComponent(p.fromStationName)}&D=${encodeURIComponent(p.toStationName)}&F=${encodeURIComponent(renfeDate)}&A=${p.passengers ?? 1}`;
     },
     'ave': (p) => OFFICIAL_BOOKING['renfe'](p),
 
     // 🇮🇹 Italia — Trenitalia
-    'trenitalia': (_p) => 'https://www.trenitalia.com/en.html',
-    'italo':      (_p) => 'https://www.italotreno.it/en',
+    'trenitalia': (p) => {
+        const params = new URLSearchParams({
+            origin: p.fromStationName,
+            destination: p.toStationName,
+            aDate: p.departureDate,
+            adults: String(p.passengers ?? 1),
+        });
+        return `https://www.trenitalia.com/en/ticket-booking.html?${params}`;
+    },
+    'italo': (p) => {
+        const params = new URLSearchParams({
+            'DepartureStation': p.fromStationName,
+            'ArrivalStation': p.toStationName,
+            'DepartureDate': p.departureDate,
+            'ADT': String(p.passengers ?? 1),
+        });
+        return `https://www.italotreno.it/en/offers-and-services?${params}`;
+    },
 
     // 🇦🇹 Austria — ÖBB
     'oebb': (p) => {
@@ -86,14 +93,13 @@ const OFFICIAL_BOOKING: Record<string, (p: BookingParams) => string> = {
 
     // 🇨🇭 Suiza — SBB
     'sbb': (p) => {
-        const base = 'https://www.sbb.ch/en/buying/pages/fahrplan/fahrplan.xhtml';
         const params = new URLSearchParams({
-            from: p.fromStationName,
-            to:   p.toStationName,
-            date: p.departureDate,
-            time: p.departureTime ?? '08:00',
+            'von': p.fromStationName,
+            'nach': p.toStationName,
+            'datum': p.departureDate,
+            'zeit': p.departureTime ?? '08:00',
         });
-        return `${base}?${params}`;
+        return `https://www.sbb.ch/en/timetable.html?${params}`;
     },
     'cff': (p) => OFFICIAL_BOOKING['sbb'](p),
     'ffs': (p) => OFFICIAL_BOOKING['sbb'](p),
@@ -145,19 +151,29 @@ const OFFICIAL_BOOKING: Record<string, (p: BookingParams) => string> = {
     'flix': (p) => OFFICIAL_BOOKING['flixtrain'](p),
 
     // 🇨🇿 República Checa — ČD
-    'cd': (_p) => 'https://www.cd.cz/en/',
+    'cd': (p) => {
+        const params = new URLSearchParams({
+            from: p.fromStationName,
+            to: p.toStationName,
+            date: p.departureDate,
+        });
+        return `https://www.cd.cz/en/timetable/connection-search/?${params}`;
+    },
 
     // 🇵🇱 Polonia — PKP
     'pkp': (p) => {
         const params = new URLSearchParams({
             from: p.fromStationName,
             to:   p.toStationName,
+            date: p.departureDate,
         });
         return `https://www.intercity.pl/en/site/for-passengers/information/schedules-and-tickets.html?${params}`;
     },
 
     // 🟡 RegioJet (Europa Central/Oriental)
-    'regiojet': (_p) => 'https://www.regiojet.com/',
+    'regiojet': (p) => {
+        return `https://www.regiojet.com/en/search?from=${encodeURIComponent(p.fromStationName)}&to=${encodeURIComponent(p.toStationName)}&date=${p.departureDate}`;
+    },
 
     // 🇸🇪 Suecia — SJ
     'sj': (p) => {
@@ -170,11 +186,20 @@ const OFFICIAL_BOOKING: Record<string, (p: BookingParams) => string> = {
     },
 
     // 🇵🇹 Portugal — CP
-    'cp': (_p) => 'https://www.cp.pt/passageiros/en/buy-tickets',
+    'cp': (p) => {
+        const params = new URLSearchParams({
+            origin: p.fromStationName,
+            destination: p.toStationName,
+            date: p.departureDate,
+        });
+        return `https://www.cp.pt/passageiros/en/buy-tickets?${params}`;
+    },
 
     // 🇬🇷 Grecia — Hellenic Train
-    'hellenic': (_p) => 'https://tickets.hellenictrain.gr/',
-    'trainose': (_p) => 'https://tickets.hellenictrain.gr/',
+    'hellenic': (p) => {
+        return `https://tickets.hellenictrain.gr/en/?from=${encodeURIComponent(p.fromStationName)}&to=${encodeURIComponent(p.toStationName)}&date=${p.departureDate}`;
+    },
+    'trainose': (p) => OFFICIAL_BOOKING['hellenic'](p),
 };
 
 // ─── Detección de operador ────────────────────────────────────────────────────

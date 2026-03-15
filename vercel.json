@@ -1,9 +1,9 @@
 {
   "rewrites": [
-    { "source": "/api-db/:path*",    "destination": "https://v6.db.transport.rest/:path*" },
-    { "source": "/api-ch/:path*",    "destination": "https://transport.opendata.ch/v1/:path*" },
-    { "source": "/api-irail/:path*", "destination": "https://api.irail.be/:path*" },
-    { "source": "/(.*)",             "destination": "/index.html" }
+    { "source": "/api-db/:path(.*)",    "destination": "https://v6.db.transport.rest/:path" },
+    { "source": "/api-ch/:path(.*)",    "destination": "https://transport.opendata.ch/v1/:path" },
+    { "source": "/api-irail/:path(.*)", "destination": "https://api.irail.be/:path" },
+    { "source": "/((?!api-).*)",        "destination": "/index.html" }
   ],
   "headers": [
     {

@@ -109,11 +109,17 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                         <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
                     </button>
                     <div className="text-right">
-                        <div className="flex items-center justify-end gap-1 text-2xl font-black">
-                            <span className="text-white">{route.price}</span>
-                            <Euro size={18} className="text-indigo-400" />
-                        </div>
-                        <div className="text-[10px] text-[var(--text-muted)] font-semibold">por persona</div>
+                        {route.price != null ? (
+                          <>
+                            <div className="flex items-center justify-end gap-1 text-2xl font-black">
+                                <span className="text-white">{route.price.toFixed(2)}</span>
+                                <Euro size={18} className="text-indigo-400" />
+                            </div>
+                            <div className="text-[10px] text-[var(--text-muted)] font-semibold">por persona</div>
+                          </>
+                        ) : (
+                          <div className="text-sm font-bold text-[var(--text-muted)]">Consultar precio</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -211,7 +217,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                                 <div key={idx} className="flex gap-4 group">
                                     <div className="flex flex-col items-center">
                                         <div className="w-2 h-2 rounded-full bg-indigo-500/50 group-hover:bg-indigo-500 transition-colors" />
-                                        {idx !== route.stops!.length - 1 && <div className="w-px flex-1 bg-white/10" />}
+                                        {idx !== (route.stops?.length ?? 0) - 1 && <div className="w-px flex-1 bg-white/10" />}
                                     </div>
                                     <div className="flex-1 pb-4 flex justify-between items-start">
                                         <div>

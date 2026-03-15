@@ -32,7 +32,10 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
   const [toName, setToName] = useState('');
   const [toStation, setToStation] = useState<Station | undefined>();
 
-  const [departureDate, setDepartureDate] = useState(new Date().toISOString().split('T')[0]);
+  const [departureDate, setDepartureDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  });
   const [returnDate, setReturnDate] = useState('');
   const [passengers, setPassengers] = useState<PassengerCounts>({ adults: 1, children: 0, infants: 0 });
 
@@ -42,7 +45,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
     setToId(fromId); setToName(fromName); setToStation(fromStation);
   };
 
-  const canSearch = (fromId || fromName.trim()) && (toId || toName.trim());
+  const canSearch = (fromId || fromName.trim()) && (toId || toName.trim()) && departureDate;
   const returnDateError = tripType === 'round-trip' && returnDate && returnDate <= departureDate;
 
   const handleSubmit = () => {

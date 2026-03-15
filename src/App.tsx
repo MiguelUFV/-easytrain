@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Train, LayoutDashboard, Calendar, Settings as SettingsIcon,
   Map, Zap, Ticket, Heart, TrendingDown, AlertCircle,
-  Bell, History, User, ChevronRight
+  Bell, History, User, ChevronRight, Waves
 } from 'lucide-react';
 import { useTrainStore } from './store/useTrainStore';
 import { RouteCard } from './components/RouteCard';
@@ -111,7 +111,7 @@ const Dashboard = () => {
       fromStation: defaultOrigin,
       to: stationId,
       toStation: destStation,
-      departureDate: new Date().toISOString().split('T')[0],
+      departureDate: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
       tripType: 'one-way',
       passengers: { adults: 1, children: 0, infants: 0 }
     });
@@ -160,9 +160,9 @@ const Dashboard = () => {
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-6"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em] mb-6"
             >
-              <Zap size={10} fill="currentColor" /> v2.4 (HAFAS ENGINE)
+              <Waves size={10} fill="currentColor" /> MARITIME SYSTEM ACTIVE
             </motion.div>
             <motion.h1 
               initial={{ opacity: 0, y: 30 }}

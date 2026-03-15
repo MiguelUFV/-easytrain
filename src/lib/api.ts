@@ -411,11 +411,11 @@ function buildRoute(p: RouteParams): Route {
         toStationId: p.toStationId,
         fromStationName: p.fromStationName,
         toStationName: p.toStationName,
-        fromCoordinates: p.fromCoords?.latitude
-            ? { lat: p.fromCoords.latitude, lng: p.fromCoords.longitude! }
+        fromCoordinates: p.fromCoords?.latitude != null && p.fromCoords?.longitude != null
+            ? { lat: p.fromCoords.latitude, lng: p.fromCoords.longitude }
             : undefined,
-        toCoordinates: p.toCoords?.latitude
-            ? { lat: p.toCoords.latitude, lng: p.toCoords.longitude! }
+        toCoordinates: p.toCoords?.latitude != null && p.toCoords?.longitude != null
+            ? { lat: p.toCoords.latitude, lng: p.toCoords.longitude }
             : undefined,
         departureTime: p.departureTime,
         arrivalTime: p.arrivalTime,

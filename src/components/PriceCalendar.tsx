@@ -38,8 +38,8 @@ export const PriceCalendar = ({ fromName, toName, fromId, toId, onSelectDate, se
 
     const days = Array.from({ length: 14 }, (_, i) => addDays(weekStart, i));
     const priceValues = Object.values(prices);
-    const minPrice = Math.min(...priceValues);
-    const maxPrice = Math.max(...priceValues);
+    const minPrice = priceValues.length > 0 ? Math.min(...priceValues) : 0;
+    const maxPrice = priceValues.length > 0 ? Math.max(...priceValues) : 0;
 
     return (
         <div className="glass-card p-6">
@@ -115,8 +115,7 @@ export const PriceCalendar = ({ fromName, toName, fromId, toId, onSelectDate, se
                         </motion.button>
                     );
                 })}
-                {/* Spacer for second row start */}
-                {Array.from({ length: days.slice(0, 7)[0].getDay() === 0 ? 6 : days.slice(0, 7)[0].getDay() - 1 === -1 ? 0 : 0 }).map((_, i) => <div key={`sp-${i}`} />)}
+                {/* Second week (continues directly, same grid alignment) */}
                 {/* Second week */}
                 {days.slice(7, 14).map(day => {
                     const key = format(day, 'yyyy-MM-dd');

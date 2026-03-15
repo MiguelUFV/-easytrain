@@ -33,6 +33,8 @@ interface TrainActions {
     trackBookingClick: (click: Omit<BookingClick, 'id' | 'timestamp'>) => void;
     // Onboarding
     completeOnboarding: () => void;
+    // Settings
+    updateSettings: (settings: Partial<AppState['settings']>) => void;
 }
 
 export const useTrainStore = create<AppState & TrainActions>()(
@@ -58,6 +60,11 @@ export const useTrainStore = create<AppState & TrainActions>()(
             interrailRouteMode: false,
             bookingClicks: [],
             hasSeenOnboarding: false,
+            settings: {
+                priceAlerts: true,
+                travelInsurance: false,
+                quickPay: true,
+            },
             isOffline: !navigator.onLine,
             isLoading: false,
             error: null,
@@ -170,6 +177,9 @@ export const useTrainStore = create<AppState & TrainActions>()(
                 ].slice(0, 50)
             })),
             completeOnboarding: () => set({ hasSeenOnboarding: true }),
+            updateSettings: (newSettings) => set((state) => ({
+                settings: { ...state.settings, ...newSettings }
+            })),
         }),
         {
             name: 'easytrain-storage-v2',
@@ -183,6 +193,7 @@ export const useTrainStore = create<AppState & TrainActions>()(
                 stationCache: state.stationCache,
                 bookingClicks: state.bookingClicks,
                 hasSeenOnboarding: state.hasSeenOnboarding,
+                settings: state.settings,
                 // DON'T persist: routes, selectedRouteId, interrailStops,
                 // interrailRouteMode, isLoading, error, isOffline, stations
             }),

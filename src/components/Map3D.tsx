@@ -42,7 +42,18 @@ export const Map3D = () => {
                                 Resumen del Viaje
                             </h2>
                             <div className="flex gap-2">
-                                <button className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white">
+                                <button
+                                    onClick={() => {
+                                        const text = `🚆 ${activeRoute.fromStationName} → ${activeRoute.toStationName}\n⏰ ${activeRoute.departureTime ? new Date(activeRoute.departureTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''} - ${activeRoute.arrivalTime ? new Date(activeRoute.arrivalTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}\n🚉 ${activeRoute.operator}${activeRoute.price != null ? `\n💰 ${activeRoute.price}€` : ''}`;
+                                        if (navigator.share) {
+                                            navigator.share({ title: 'EasyTrain - Ruta', text });
+                                        } else {
+                                            navigator.clipboard.writeText(text);
+                                        }
+                                    }}
+                                    className="p-2 hover:bg-white/5 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    title="Compartir ruta"
+                                >
                                     <Share2 size={18} />
                                 </button>
                                 <button
@@ -65,7 +76,7 @@ export const Map3D = () => {
                                     <div className="text-xs text-gray-400">{activeRoute.type} · {activeRoute.lineName}</div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-lg font-black text-white">{activeRoute.price} €</div>
+                                    <div className="text-lg font-black text-white">{activeRoute.price != null ? `${activeRoute.price} €` : 'Consultar'}</div>
                                     <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Tarifa Base</div>
                                 </div>
                             </div>

@@ -8,6 +8,7 @@ import {
 } from '../lib/booking';
 import { useTrainStore } from '../store/useTrainStore';
 import { useToastStore } from './Toast';
+import { analytics } from '../lib/analytics';
 
 interface BookingButtonProps {
     route: Route;
@@ -50,6 +51,7 @@ export const BookingButton: React.FC<BookingButtonProps> = ({
     const operatorLabel = operatorKey ? (OPERATOR_LABELS[operatorKey] ?? route.operator) : null;
 
     const track = (platform: string) => {
+        analytics.clickBooking(platform, params.fromCity, params.toCity);
         trackBookingClick({
             routeId: route.id,
             platform: platform as BookingPlatform,

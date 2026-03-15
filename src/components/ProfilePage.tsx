@@ -185,19 +185,19 @@ export const ProfilePage = () => {
                     <div className="glass-card p-8">
                         <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">Medallas de Viajero</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <Medal icon="🏅" title="Pionero" desc="Primeras 10 rutas" achieved />
-                            <Medal icon="🌱" title="Eco-Viajero" desc="100kg CO2 ahorrado" achieved />
-                            <Medal icon="⚡" title="Ahorrador" desc="Ahorra >20% en 5 rutas" />
-                            <Medal icon="👑" title="Embajador" desc="Invita a 3 amigos" />
+                            <Medal icon="🏅" title="Pionero" desc="Primeras 10 búsquedas" achieved={searchHistory.length >= 10} />
+                            <Medal icon="🌱" title="Eco-Viajero" desc="5+ rutas guardadas" achieved={favorites.length >= 5} />
+                            <Medal icon="⚡" title="Explorador" desc="3+ alertas de precio" achieved={priceAlerts.length >= 3} />
+                            <Medal icon="👑" title="Viajero Pro" desc="Perfil completo" achieved={userProfile.isRegistered} />
                         </div>
                     </div>
 
                     <div className="glass-card p-8">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">Estadísticas de Impacto</h3>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">Tu Actividad</h3>
                         <div className="space-y-6">
-                            <StatProgress label="Kilómetros Recorridos" value={1240} max={5000} unit="km" color="bg-indigo-500" />
-                            <StatProgress label="CO2 Ahorrado" value={45} max={100} unit="kg" color="bg-green-500" />
-                            <StatProgress label="Tiempo en Tren" value={18} max={50} unit="h" color="bg-amber-500" />
+                            <StatProgress label="Rutas Favoritas" value={favorites.length} max={Math.max(20, favorites.length)} unit="rutas" color="bg-indigo-500" />
+                            <StatProgress label="Búsquedas Realizadas" value={searchHistory.length} max={Math.max(10, searchHistory.length)} unit="búsquedas" color="bg-green-500" />
+                            <StatProgress label="Alertas Activas" value={priceAlerts.length} max={Math.max(10, priceAlerts.length)} unit="alertas" color="bg-amber-500" />
                         </div>
                     </div>
                 </div>

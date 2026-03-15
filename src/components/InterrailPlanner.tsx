@@ -23,6 +23,7 @@ import { useTrainStore } from '../store/useTrainStore';
 import { useToastStore } from './Toast';
 import type { Route } from '../types';
 import { BookingButton } from './BookingButton';
+import { analytics } from '../lib/analytics';
 import { routeToBookingParams, openOfficialBooking, openBooking } from '../lib/booking';
 
 // ═══════════════════════════════════════
@@ -312,7 +313,12 @@ export const InterrailPlanner = () => {
     // Actions
     const addStation = useCallback((id: string) => {
         if (!interrailStopSet.has(id)) {
-            addInterrailStop({ stationId: id, addedFrom: 'planner' });
+            const s = stations.find(st => st.id === id);
+            addInterrailStop({ 
+                stationId: id, 
+                stationName: s?.city || id,
+                addedFrom: 'planner' 
+            });
         }
         setShowStationPicker(false);
         setStationSearch('');
@@ -327,12 +333,18 @@ export const InterrailPlanner = () => {
         if (interrailStopSet.has(stationId)) {
             removeInterrailStop(stationId);
         } else {
-            addInterrailStop({ stationId, addedFrom: 'map' });
+            const s = stations.find(st => st.id === stationId);
+            addInterrailStop({ 
+                stationId, 
+                stationName: s?.city || stationId,
+                addedFrom: 'map' 
+            });
         }
     }, [routeMode, interrailStopSet, addInterrailStop, removeInterrailStop]);
 
     const optimize = useCallback(() => {
         if (selectedStationIds.length < 2) return;
+        analytics.optimizeInterrail(selectedStationIds.length, totalDays);
         const itinerary = optimizeInterrail(selectedStationIds, totalDays, currentWeights);
         setResult(itinerary);
         const alts = generateAlternatives(selectedStationIds, totalDays, 5);
@@ -344,7 +356,14 @@ export const InterrailPlanner = () => {
     const loadPreset = useCallback((preset: typeof POPULAR_ROUTES[0]) => {
         const validStops = preset.stops.filter(id => stations.some(s => s.id === id));
         const stopIds = validStops.map(id => id);
-        setInterrailStops(validStops.map(id => ({ stationId: id, addedFrom: 'planner' as const })));
+        setInterrailStops(validStops.map(id => {
+            const s = stations.find(st => st.id === id);
+            return { 
+                stationId: id, 
+                stationName: s?.city || id,
+                addedFrom: 'planner' as const 
+            };
+        }));
         setTotalDays(preset.days);
         setShowPresets(false);
         // Auto-optimizar y activar mapa neon
@@ -366,7 +385,14 @@ export const InterrailPlanner = () => {
             const s = hubs[Math.floor(Math.random() * hubs.length)];
             if (!picked.includes(s.id)) picked.push(s.id);
         }
-        setInterrailStops(picked.map(id => ({ stationId: id, addedFrom: 'planner' as const })));
+        setInterrailStops(picked.map(id => {
+            const s = stations.find(st => st.id === id);
+            return { 
+                stationId: id, 
+                stationName: s?.city || id,
+                addedFrom: 'planner' as const 
+            };
+        }));
         setResult(null);
     }, [setInterrailStops]);
 

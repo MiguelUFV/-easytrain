@@ -21,10 +21,19 @@ import { PriceCalendar } from './components/PriceCalendar';
 import { ToastContainer } from './components/Toast';
 import { OnboardingTour } from './components/OnboardingTour';
 import type { Station, PassengerCounts, Station as StationType } from './types';
+import { trackPageView, analytics } from './lib/analytics';
+
+const AnalyticsTracker = () => {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+  return null;
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { routes: storeRoutes, setRoutes, setError, error, addSearchHistory, setInterrailRouteMode } = useTrainStore();
+  const { routes: storeRoutes, setRoutes, setError, error, addSearchHistory, setInterrailRouteMode, interrailStops } = useTrainStore();
   const [calendarFrom, setCalendarFrom] = useState<StationType | null>(null);
   const [calendarTo, setCalendarTo] = useState<StationType | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -68,6 +77,9 @@ const Dashboard = () => {
     // Always update calendar context on new search
     setCalendarFrom(params.fromStation ?? null);
     setCalendarTo(params.toStation ?? null);
+    
+    // Track search in Google Analytics
+    analytics.searchRoute(params.fromStation?.name ?? params.from, params.toStation?.name ?? params.to);
     try {
       const filtered = await fetchRoutes(params.from, params.to, params.departureDate);
       // Single source of truth: store.routes
@@ -251,7 +263,7 @@ const Dashboard = () => {
               <h2 className="text-2xl font-black text-white tracking-tight">Destinos en Tendencia</h2>
               <p className="text-sm text-gray-500 mt-1 font-medium">Las rutas más buscadas esta semana en Europa.</p>
             </div>
-            <button className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-400 hover:text-white transition-all">
+            <button onClick={() => navigate('/map')} className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-400 hover:text-white transition-all">
               Ver todos
             </button>
           </div>
@@ -364,11 +376,21 @@ const Dashboard = () => {
 
           <div className="glass-card p-6">
             <div className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] mb-5">Tu Plan Interrail</div>
-            <div className="space-y-0.5">
-              <TimelineStep active location="Amsterdam" date="15 Julio" />
-              <TimelineStep location="Paris" date="18 Julio" />
-              <TimelineStep location="Barcelona" date="21 Julio" />
-            </div>
+            {interrailStops.length > 0 ? (
+              <div className="space-y-0.5">
+                {interrailStops.map((stop, i) => (
+                  <TimelineStep key={stop.stationId} active={i === 0} location={stop.stationName} date={`Parada ${i + 1}`} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="text-2xl mb-2">🗺️</div>
+                <p className="text-xs text-gray-500 mb-3">Aún no tienes paradas planificadas.</p>
+                <button onClick={() => navigate('/interrail')} className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest">
+                  Planificar Ruta →
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Price Calendar — appears after search */}
@@ -437,6 +459,7 @@ export const App = () => {
 
   return (
     <Router>
+      <AnalyticsTracker />
       <div className="flex flex-col md:flex-row min-h-screen bg-[var(--bg-dark)] text-white">
         <Sidebar />
         <main className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">
@@ -520,10 +543,10 @@ const Sidebar = () => {
             <Zap size={14} fill="currentColor" />
             <span className="text-[11px] font-black uppercase tracking-widest">Premium</span>
           </div>
-          <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">Desbloquea ahorros avanzados y sincronización.</p>
-          <button className="w-full py-2 text-[12px] font-bold text-white rounded-xl transition-colors" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
-            Activar Premium
-          </button>
+          <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">Busca, compara y reserva trenes por toda Europa.</p>
+          <Link to="/interrail" className="block w-full py-2 text-[12px] font-bold text-white rounded-xl transition-colors text-center" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+            Planificar Viaje
+          </Link>
         </div>
       </div>
     </aside>

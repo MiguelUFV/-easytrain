@@ -1,5 +1,5 @@
 // Google Analytics 4 helpers
-// Replace G-XXXXXXXXXX in index.html with your real Measurement ID
+// Using Measurement ID: G-ZDRML4XKTF
 
 declare global {
     interface Window {

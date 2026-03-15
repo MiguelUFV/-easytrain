@@ -15,6 +15,7 @@ import { PriceCalendar } from './components/PriceCalendar';
 import { ToastContainer } from './components/Toast';
 import { OnboardingTour } from './components/OnboardingTour';
 import type { Station, PassengerCounts, Station as StationType } from './types';
+import { trackPageView, analytics } from './lib/analytics';
 
 // Lazy-loaded heavy pages
 const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
@@ -29,6 +30,14 @@ const PageLoader = () => (
     <Loader2 className="animate-spin text-indigo-400" size={32} />
   </div>
 );
+
+const AnalyticsTracker = () => {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+  return null;
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -76,6 +85,8 @@ const Dashboard = () => {
     // Always update calendar context on new search
     setCalendarFrom(params.fromStation ?? null);
     setCalendarTo(params.toStation ?? null);
+    // Track search in Google Analytics
+    analytics.searchRoute(params.fromStation?.name ?? params.from, params.toStation?.name ?? params.to);
     try {
       const filtered = await fetchRoutes(params.from, params.to, params.departureDate);
       // Single source of truth: store.routes
@@ -454,6 +465,7 @@ export const App = () => {
 
   return (
     <Router>
+      <AnalyticsTracker />
       <div className="flex flex-col md:flex-row min-h-screen bg-[var(--bg-dark)] text-white">
         <Sidebar />
         <main className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">

@@ -24,6 +24,7 @@ import { useToastStore } from './Toast';
 import type { Route } from '../types';
 import { BookingButton } from './BookingButton';
 import { routeToBookingParams, openOfficialBooking, openBooking } from '../lib/booking';
+import { analytics } from '../lib/analytics';
 
 // ═══════════════════════════════════════
 // Constantes
@@ -341,6 +342,7 @@ export const InterrailPlanner = () => {
         setAlternatives(alts);
         setActiveTab('result');
         setInterrailRouteMode(true); // activa mapa neon automáticamente
+        analytics.optimizeInterrail(selectedStationIds.length, totalDays);
     }, [selectedStationIds, totalDays, currentWeights, setInterrailRouteMode]);
 
     const loadPreset = useCallback((preset: typeof POPULAR_ROUTES[0]) => {

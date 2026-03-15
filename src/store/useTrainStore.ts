@@ -31,6 +31,8 @@ interface TrainActions {
     toggleInterrailRouteMode: () => void;
     // Affiliate Booking
     trackBookingClick: (click: Omit<BookingClick, 'id' | 'timestamp'>) => void;
+    // Settings
+    updateSettings: (newSettings: Partial<AppState['settings']>) => void;
     // Onboarding
     completeOnboarding: () => void;
 }
@@ -58,6 +60,7 @@ export const useTrainStore = create<AppState & TrainActions>()(
             interrailRouteMode: false,
             bookingClicks: [],
             hasSeenOnboarding: false,
+            settings: { priceAlerts: true, travelInsurance: false, quickPay: true },
             isOffline: !navigator.onLine,
             isLoading: false,
             error: null,
@@ -169,6 +172,7 @@ export const useTrainStore = create<AppState & TrainActions>()(
                     ...state.bookingClicks
                 ].slice(0, 50)
             })),
+            updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
             completeOnboarding: () => set({ hasSeenOnboarding: true }),
         }),
         {
@@ -183,6 +187,7 @@ export const useTrainStore = create<AppState & TrainActions>()(
                 stationCache: state.stationCache,
                 bookingClicks: state.bookingClicks,
                 hasSeenOnboarding: state.hasSeenOnboarding,
+                settings: state.settings,
                 // DON'T persist: routes, selectedRouteId, interrailStops,
                 // interrailRouteMode, isLoading, error, isOffline, stations
             }),

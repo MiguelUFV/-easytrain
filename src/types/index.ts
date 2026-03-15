@@ -105,6 +105,7 @@ export interface UserProfile {
 // Interrail map-planner sync
 export interface InterrailStop {
     stationId: string;
+    stationName: string;
     addedFrom: 'map' | 'planner'; // where it was added
 }
 
@@ -139,4 +140,10 @@ export interface AppState {
     bookingClicks: BookingClick[];
     // Onboarding
     hasSeenOnboarding: boolean;
+    // Settings
+    settings: {
+        priceAlerts: boolean;
+        travelInsurance: boolean;
+        quickPay: boolean;
+    };
 }

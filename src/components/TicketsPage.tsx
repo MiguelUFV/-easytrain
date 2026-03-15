@@ -38,8 +38,26 @@ const TicketCard = ({ ticket, index }: { ticket: any, index: number }) => {
                                 <div className="flex items-center gap-2">
                                     <span className="text-[8px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full font-black border border-green-500/20 tracking-tighter">CONFIRMADO</span>
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-1.5 text-gray-500 hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}><Download size={14} /></button>
-                                        <button className="p-1.5 text-gray-500 hover:text-white transition-colors" onClick={(e) => e.stopPropagation()}><Share2 size={14} /></button>
+                                        <button className="p-1.5 text-gray-500 hover:text-white transition-colors" onClick={(e) => {
+                                            e.stopPropagation();
+                                            const text = `EasyTrain Billete ${ticket.id}\n${ticket.from} → ${ticket.to}\n${ticket.date} ${ticket.departure}-${ticket.arrival}\n${ticket.operator} · ${ticket.price} EUR`;
+                                            const blob = new Blob([text], { type: 'text/plain' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `billete-${ticket.id}.txt`;
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                        }}><Download size={14} /></button>
+                                        <button className="p-1.5 text-gray-500 hover:text-white transition-colors" onClick={(e) => {
+                                            e.stopPropagation();
+                                            const text = `${ticket.from} → ${ticket.to} · ${ticket.date} · ${ticket.price} EUR`;
+                                            if (navigator.share) {
+                                                navigator.share({ title: `Billete ${ticket.id}`, text });
+                                            } else {
+                                                navigator.clipboard.writeText(text);
+                                            }
+                                        }}><Share2 size={14} /></button>
                                     </div>
                                 </div>
                             </div>
@@ -150,36 +168,38 @@ const TicketCard = ({ ticket, index }: { ticket: any, index: number }) => {
     );
 };
 
+const safeTime = (dateStr: string): string => {
+    try {
+        return format(new Date(dateStr), 'HH:mm');
+    } catch {
+        return '--:--';
+    }
+};
+
+const safeDate = (dateStr: string): string => {
+    try {
+        return format(new Date(dateStr), 'd MMM, yyyy', { locale: es });
+    } catch {
+        return dateStr;
+    }
+};
+
 export const TicketsPage = () => {
-    const { bookingClicks } = useTrainStore();
-    const mockTickets = [
-        {
-            id: 'T-100452',
-            from: 'Madrid Atocha',
-            to: 'Barcelona Sants',
-            date: '21 Jul, 2026',
-            departure: '08:00',
-            arrival: '10:30',
-            seat: 'Coche 4, Asiento 12A',
-            operator: 'RENFE AVE',
-            type: 'Alta Velocidad',
-            price: 85.50,
-            status: 'upcoming'
-        },
-        {
-            id: 'T-100311',
-            from: 'Paris Gare du Nord',
-            to: 'Amsterdam Centraal',
-            date: '25 Jul, 2026',
-            departure: '14:22',
-            arrival: '17:44',
-            seat: 'Coche 2, Asiento 4B',
-            operator: 'THALYS EURO',
-            type: 'International',
-            price: 112.00,
-            status: 'upcoming'
-        }
-    ];
+    const { bookingClicks, favorites, searchHistory } = useTrainStore();
+
+    const tickets = favorites.map((route, i) => ({
+        id: `T-${route.id?.slice(0, 6) || i}`,
+        from: route.fromStationName ?? route.fromStationId,
+        to: route.toStationName ?? route.toStationId,
+        date: safeDate(route.departureTime),
+        departure: safeTime(route.departureTime),
+        arrival: safeTime(route.arrivalTime),
+        seat: `Coche ${(i % 8) + 1}, Asiento ${(i * 3 + 1)}A`,
+        operator: route.operator || 'Operador',
+        type: route.type || 'Standard',
+        price: route.price ?? 0,
+        status: 'upcoming' as const,
+    }));
 
     return (
         <motion.div 
@@ -210,9 +230,14 @@ export const TicketsPage = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        {mockTickets.map((ticket, i) => (
+                        {tickets.length > 0 ? tickets.map((ticket, i) => (
                             <TicketCard key={ticket.id} ticket={ticket} index={i} />
-                        ))}
+                        )) : (
+                            <div className="col-span-full text-center py-10 glass-card border-dashed opacity-40">
+                                <Ticket className="mx-auto mb-2 text-gray-600" size={24} />
+                                <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">Guarda rutas en favoritos para verlas como billetes</p>
+                            </div>
+                        )}
                     </div>
                 </section>
                 
@@ -263,9 +288,9 @@ export const TicketsPage = () => {
                         <div className="h-px flex-1 bg-white/5" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[1, 2].map(i => (
-                            <motion.div 
-                                key={i} 
+                        {searchHistory.length > 0 ? searchHistory.slice(0, 6).map(entry => (
+                            <motion.div
+                                key={entry.id}
                                 initial={{ opacity: 0 }}
                                 whileInView={{ opacity: 1 }}
                                 className="glass-card p-5 flex items-center justify-between opacity-50 hover:opacity-100 transition-all border-dashed"
@@ -275,13 +300,17 @@ export const TicketsPage = () => {
                                         <Clock size={20} />
                                     </div>
                                     <div>
-                                        <div className="text-sm font-black text-white italic">Barcelona <ArrowRight size={10} className="inline mx-1 text-indigo-400" /> Lyon Part Dieu</div>
-                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Completado · 12 May, 2026</div>
+                                        <div className="text-sm font-black text-white italic">{entry.fromName} <ArrowRight size={10} className="inline mx-1 text-indigo-400" /> {entry.toName}</div>
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Buscado · {safeDate(entry.timestamp)}</div>
                                     </div>
                                 </div>
-                                <button className="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-[9px] font-black text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white transition-all">REVISAR</button>
                             </motion.div>
-                        ))}
+                        )) : (
+                            <div className="col-span-full text-center py-8 glass-card border-dashed opacity-30">
+                                <Clock className="mx-auto mb-2 text-gray-600" size={24} />
+                                <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">Sin historial de búsquedas</p>
+                            </div>
+                        )}
                     </div>
                 </section>
             </div>

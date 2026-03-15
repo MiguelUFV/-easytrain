@@ -312,7 +312,8 @@ export const InterrailPlanner = () => {
     // Actions
     const addStation = useCallback((id: string) => {
         if (!interrailStopSet.has(id)) {
-            addInterrailStop({ stationId: id, addedFrom: 'planner' });
+            const s = stations.find(st => st.id === id);
+            addInterrailStop({ stationId: id, stationName: s?.name ?? s?.city ?? id, addedFrom: 'planner' });
         }
         setShowStationPicker(false);
         setStationSearch('');
@@ -327,7 +328,8 @@ export const InterrailPlanner = () => {
         if (interrailStopSet.has(stationId)) {
             removeInterrailStop(stationId);
         } else {
-            addInterrailStop({ stationId, addedFrom: 'map' });
+            const s = stations.find(st => st.id === stationId);
+            addInterrailStop({ stationId, stationName: s?.name ?? s?.city ?? stationId, addedFrom: 'map' });
         }
     }, [routeMode, interrailStopSet, addInterrailStop, removeInterrailStop]);
 

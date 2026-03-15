@@ -9,7 +9,23 @@
       "Bash(find /c/Users/migue/.gemini/antigravity/scratch/EasyTrain -maxdepth 1 -name *.env* -o -name .env*)",
       "Bash(xargs ls:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:easytrain-ecru.vercel.app)",
+      "WebFetch(domain:api.irail.be)",
+      "WebFetch(domain:www.bahn.de)",
+      "WebFetch(domain:www.sbb.ch)",
+      "WebFetch(domain:www.renfe.com)",
+      "Bash(xargs wc:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(where gh:*)",
+      "Bash(mkdir -p /c/Users/migue/.gemini/antigravity/scratch/EasyTrain/.claude/worktrees/hungry-leavitt/.claude)",
+      "Bash(cp /c/Users/migue/.gemini/antigravity/scratch/EasyTrain/.claude/launch.json /c/Users/migue/.gemini/antigravity/scratch/EasyTrain/.claude/worktrees/hungry-leavitt/.claude/launch.json)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where node:*)",
+      "Bash(where npm.cmd)",
+      "Bash(where npx.cmd)",
+      "Read(//c/Program Files/nodejs/**)"
     ]
   }
 }

@@ -24,7 +24,7 @@ import type { Station, PassengerCounts, Station as StationType } from './types';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { routes: storeRoutes, setRoutes, setError, error, addSearchHistory, setInterrailRouteMode } = useTrainStore();
+  const { routes: storeRoutes, setRoutes, setError, error, addSearchHistory, setInterrailRouteMode, interrailStops } = useTrainStore();
   const [calendarFrom, setCalendarFrom] = useState<StationType | null>(null);
   const [calendarTo, setCalendarTo] = useState<StationType | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -251,7 +251,7 @@ const Dashboard = () => {
               <h2 className="text-2xl font-black text-white tracking-tight">Destinos en Tendencia</h2>
               <p className="text-sm text-gray-500 mt-1 font-medium">Las rutas más buscadas esta semana en Europa.</p>
             </div>
-            <button className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-400 hover:text-white transition-all">
+            <button onClick={() => navigate('/map')} className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-400 hover:text-white transition-all">
               Ver todos
             </button>
           </div>
@@ -364,11 +364,20 @@ const Dashboard = () => {
 
           <div className="glass-card p-6">
             <div className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] mb-5">Tu Plan Interrail</div>
-            <div className="space-y-0.5">
-              <TimelineStep active location="Amsterdam" date="15 Julio" />
-              <TimelineStep location="Paris" date="18 Julio" />
-              <TimelineStep location="Barcelona" date="21 Julio" />
-            </div>
+            {interrailStops.length > 0 ? (
+              <div className="space-y-0.5">
+                {interrailStops.map((stop, i) => (
+                  <TimelineStep key={stop.stationId} active={i === 0} location={stop.stationName || stop.stationId} date={`Parada ${i + 1}`} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="text-sm text-gray-500 mb-3">Sin ruta planificada</div>
+                <button onClick={() => navigate('/interrail')} className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 hover:bg-indigo-500/20 transition-all">
+                  Planificar Ruta
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Price Calendar — appears after search */}
@@ -521,9 +530,9 @@ const Sidebar = () => {
             <span className="text-[11px] font-black uppercase tracking-widest">Premium</span>
           </div>
           <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">Desbloquea ahorros avanzados y sincronización.</p>
-          <button className="w-full py-2 text-[12px] font-bold text-white rounded-xl transition-colors" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
-            Activar Premium
-          </button>
+          <Link to="/interrail" className="block w-full py-2 text-[12px] font-bold text-white rounded-xl transition-colors text-center" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+            Planificar Viaje
+          </Link>
         </div>
       </div>
     </aside>

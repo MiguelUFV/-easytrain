@@ -43,11 +43,11 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
   };
 
   const canSearch = (fromId || fromName.trim()) && (toId || toName.trim());
-  const returnDateError = tripType === 'round-trip' && returnDate && returnDate <= departureDate;
+  const returnDateError = tripType === 'round-trip' && returnDate && new Date(returnDate) <= new Date(departureDate);
 
   const handleSubmit = () => {
     if (!canSearch) return;
-    if (tripType === 'round-trip' && returnDate && returnDate <= departureDate) return;
+    if (tripType === 'round-trip' && returnDate && new Date(returnDate) <= new Date(departureDate)) return;
     onSearch({
       from: fromId || fromName.trim(),
       fromStation,
@@ -88,6 +88,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
           <StationSearch
             placeholder="¿Desde dónde?"
             value={fromId}
+            displayName={fromName}
             onChange={(id: string, name: string) => { setFromId(id); setFromName(name); }}
             onSelect={(s: Station) => { setFromStation(s); setFromId(s.id); setFromName(s.name); }}
           />
@@ -112,6 +113,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
           <StationSearch
             placeholder="¿A dónde vas?"
             value={toId}
+            displayName={toName}
             onChange={(id: string, name: string) => { setToId(id); setToName(name); }}
             onSelect={(s: Station) => { setToStation(s); setToId(s.id); setToName(s.name); }}
           />

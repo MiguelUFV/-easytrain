@@ -1,6 +1,15 @@
 import type { Station, Route } from '../types';
 import { routeLimiter, stationLimiter } from './rateLimit';
 
+// ─── Fetch con timeout ──────────────────────────────────────────────────────
+const FETCH_TIMEOUT_MS = 10_000;
+
+function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 /**
  * api.ts — Capa de datos multi-API para trenes europeos
  *
@@ -94,11 +103,13 @@ export function isRegionSupported(fromId: string, toId: string): boolean {
     const supportedPrefixes = ['80', '85', '88', '81']; // Alemania, Suiza, Bélgica, Austria (parcial)
     const fromPrefix = fromId.substring(0, 2);
     const toPrefix = toId.substring(0, 2);
-    
-    // Si ambos son del mismo país no soportado, no hay soporte
-    if (fromPrefix === toPrefix && !supportedPrefixes.includes(fromPrefix)) return false;
-    
-    return true; 
+
+    // Necesitamos que AL MENOS una estación esté en un país con API soportada
+    // (DB puede resolver rutas internacionales si una estación está en su red)
+    const fromSupported = supportedPrefixes.includes(fromPrefix);
+    const toSupported = supportedPrefixes.includes(toPrefix);
+
+    return fromSupported || toSupported;
 }
 
 /** Obtiene la información del operador oficial fallback para regiones sin API */
@@ -232,7 +243,7 @@ export const FALLBACK_STATIONS: Station[] = [
 // ─── API DB (Deutsche Bahn) ───────────────────────────────────────────────────
 
 async function fetchStationsFromDB(query: string): Promise<Station[]> {
-    const res = await fetch(`/api-db/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    const res = await fetchWithTimeout(`/api-db/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
     if (!res.ok) throw new Error(`DB API ${res.status}`);
     const data: any[] = await res.json();
     return data
@@ -267,7 +278,7 @@ async function fetchRoutesFromDB(fromId: string, toId: string, date?: string): P
     const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
     let url = `/api-db/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=10&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
 
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`DB API ${res.status}`);
     const data = await res.json();
     if (!data?.journeys?.length) return [];
@@ -310,7 +321,7 @@ async function fetchRoutesFromDB(fromId: string, toId: string, date?: string): P
 // ─── API SBB (Suiza — transport.opendata.ch) ──────────────────────────────────
 
 async function fetchStationsFromSBB(query: string): Promise<Station[]> {
-    const res = await fetch(`/api-ch/locations?query=${encodeURIComponent(query)}&type=station`);
+    const res = await fetchWithTimeout(`/api-ch/locations?query=${encodeURIComponent(query)}&type=station`);
     if (!res.ok) throw new Error(`SBB API ${res.status}`);
     const data = await res.json();
     return (data.stations ?? []).map((s: any) => {
@@ -333,7 +344,7 @@ async function fetchRoutesFromSBB(from: string, to: string, date?: string): Prom
     if (date && isValidDate(date)) {
         url += `&date=${encodeURIComponent(date)}&time=06%3A00`;
     }
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`SBB API ${res.status}`);
     const data = await res.json();
     if (!data?.connections?.length) return [];
@@ -384,7 +395,7 @@ let irailStationCache: Station[] | null = null;
 
 async function fetchAllIrailStations(): Promise<Station[]> {
     if (irailStationCache) return irailStationCache;
-    const res = await fetch('/api-irail/stations/?lang=es&format=json');
+    const res = await fetchWithTimeout('/api-irail/stations/?lang=es&format=json');
     if (!res.ok) throw new Error(`iRail stations ${res.status}`);
     const data = await res.json();
     const list: Station[] = (data['@graph'] ?? []).map((s: any) => {
@@ -431,7 +442,7 @@ async function fetchRoutesFromIrail(from: string, to: string, date?: string): Pr
     }
 
     const url = `/api-irail/connections/?from=${encodeURIComponent(fromName)}&to=${encodeURIComponent(toName)}&date=${dateParam}&time=${timeParam}&format=json&lang=es`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`iRail connections ${res.status}`);
     const data = await res.json();
     if (!data?.connection?.length) return [];
@@ -539,18 +550,18 @@ interface RouteParams {
 }
 
 function buildRoute(p: RouteParams): Route {
-    const occupancy = (stableHash(p.id) % 100) / 100;
+    const occupancy = (stableHash(p.id) % 100) / 100; // Estimación visual, no dato real
     return {
         id: p.id,
         fromStationId: p.fromStationId,
         toStationId: p.toStationId,
         fromStationName: p.fromStationName,
         toStationName: p.toStationName,
-        fromCoordinates: p.fromCoords?.latitude
-            ? { lat: p.fromCoords.latitude, lng: p.fromCoords.longitude! }
+        fromCoordinates: (p.fromCoords?.latitude && p.fromCoords?.longitude)
+            ? { lat: p.fromCoords.latitude, lng: p.fromCoords.longitude }
             : undefined,
-        toCoordinates: p.toCoords?.latitude
-            ? { lat: p.toCoords.latitude, lng: p.toCoords.longitude! }
+        toCoordinates: (p.toCoords?.latitude && p.toCoords?.longitude)
+            ? { lat: p.toCoords.latitude, lng: p.toCoords.longitude }
             : undefined,
         departureTime: p.departureTime,
         arrivalTime: p.arrivalTime,

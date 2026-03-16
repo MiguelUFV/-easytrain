@@ -77,9 +77,10 @@ export const CookieBanner = () => {
               </div>
             </div>
 
-            {/* Close visual only */}
-            <button 
-              onClick={() => handleConsent(false)}
+            {/* Close — solo oculta, no registra preferencia (GDPR: no forzar elección) */}
+            <button
+              onClick={() => setShow(false)}
+              aria-label="Cerrar banner de cookies"
               className="absolute top-4 right-4 text-gray-600 hover:text-gray-400 transition-colors"
             >
               <X size={16} />

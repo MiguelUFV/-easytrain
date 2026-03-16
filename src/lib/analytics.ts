@@ -84,11 +84,9 @@ export const analytics = {
     createPriceAlert: (from: string, to: string, targetPrice: number) =>
         trackEvent('price_alert_created', { from, to, target_price: targetPrice }),
 
-    /** User completed registration */
-    register: (params: { name: string; email: string }) =>
-        trackEvent('sign_up', { 
+    /** User completed registration (NO PII — solo método para cumplir GDPR) */
+    register: () =>
+        trackEvent('sign_up', {
             method: 'email',
-            nombre_usuario: params.name,
-            email_usuario: params.email
         }),
 };

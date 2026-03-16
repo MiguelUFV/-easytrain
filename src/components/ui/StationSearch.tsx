@@ -14,16 +14,29 @@ interface StationSearchProps {
 
 export const StationSearch: React.FC<StationSearchProps> = ({
   placeholder,
+  value,
+  displayName,
   onChange,
   onSelect
 }) => {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState(displayName ?? '');
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Sync with external value changes (e.g., swap button)
+  useEffect(() => {
+    if (displayName !== undefined && displayName !== inputText && !isOpen) {
+      setInputText(displayName);
+    }
+    if (!value && inputText && !isOpen) {
+      setInputText('');
+      setSelectedStation(null);
+    }
+  }, [value, displayName]);
 
   // Fetch suggestions when typing
   useEffect(() => {
@@ -38,8 +51,8 @@ export const StationSearch: React.FC<StationSearchProps> = ({
         const results = await fetchStations(inputText.trim());
         setSuggestions(results);
         if (results.length > 0) setIsOpen(true);
-      } catch {
-        // silent fail
+      } catch (err) {
+        console.warn('[StationSearch] Error buscando estaciones:', err);
       } finally {
         setIsLoading(false);
       }
@@ -103,8 +116,8 @@ export const StationSearch: React.FC<StationSearchProps> = ({
                 const defaults = await fetchStations('');
                 setSuggestions(defaults.slice(0, 6));
                 setIsOpen(true);
-              } catch {
-                // silent
+              } catch (err) {
+                console.warn('[StationSearch] Error cargando estaciones populares:', err);
               } finally {
                 setIsLoading(false);
               }

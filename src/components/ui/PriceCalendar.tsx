@@ -145,7 +145,7 @@ export const PriceCalendar = ({ toName, fromId, toId, onSelectDate, selectedDate
                     </div>
                 </div>
                 <div className="text-[9px] font-bold text-gray-600">
-                    Sincronizado con HAFAS
+                    Precios estimados orientativos
                 </div>
             </div>
         </div>

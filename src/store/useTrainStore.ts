@@ -192,6 +192,7 @@ export const useTrainStore = create<AppState & TrainActions>()(
                     isRegistered: false,
                 },
                 isAnonymousMode: false,
+                isAuthModalOpen: false,
                 bookingClicks: [],
                 favorites: [],
                 priceAlerts: [],

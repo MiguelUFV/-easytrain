@@ -1,40 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Mail, Lock, Zap, Train } from 'lucide-react';
+import { X, User, Mail, Lock, Zap, Train, Loader2 } from 'lucide-react';
 import { useTrainStore } from '../../store/useTrainStore';
 import { useToastStore } from './Toast';
 import { analytics } from '../../lib/analytics';
+import { registerUser, loginUser, isEmailRegistered } from '../../lib/auth';
+import { sendWelcomeEmail, sendMarketingEmail } from '../../lib/email';
 
 export const AuthModal = () => {
     const { isAuthModalOpen, setAuthModalOpen, setAnonymousMode, updateUserProfile } = useTrainStore();
     const { addToast } = useToastStore();
     const [isLogin, setIsLogin] = useState(false);
     const [form, setForm] = useState({ name: '', email: '', password: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    // Auto-detectar si el email ya está registrado → cambiar a login
+    useEffect(() => {
+        if (!form.email || form.email.length < 5) return;
+        const timer = setTimeout(() => {
+            const registered = isEmailRegistered(form.email);
+            if (registered && !isLogin) {
+                setIsLogin(true);
+                addToast('¡Ya tienes cuenta! Introduce tu contraseña para acceder.', 'info');
+            }
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [form.email, isLogin, addToast]);
 
     if (!isAuthModalOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const clearErrors = () => setFieldErrors({});
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.email || !form.password || (!isLogin && !form.name)) {
-            addToast('Por favor, completa todos los campos', 'error');
-            return;
+        clearErrors();
+        setIsSubmitting(true);
+
+        try {
+            if (isLogin) {
+                // ── LOGIN ──
+                const result = await loginUser(form.email, form.password);
+                if (!result.success) {
+                    setFieldErrors({ general: result.error ?? 'Error al iniciar sesión' });
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                updateUserProfile({
+                    name: result.user!.name,
+                    email: result.user!.email,
+                    avatar: result.user!.avatar,
+                    country: result.user!.country,
+                    currency: result.user!.currency,
+                    isRegistered: true,
+                });
+
+                addToast(`¡Bienvenido de nuevo, ${result.user!.name}!`, 'success');
+                setAuthModalOpen(false);
+            } else {
+                // ── REGISTRO ──
+                const result = await registerUser(form.name, form.email, form.password);
+                if (!result.success) {
+                    setFieldErrors({ general: result.error ?? 'Error al registrarse' });
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                // Actualizar perfil en la app
+                updateUserProfile({
+                    name: form.name.trim(),
+                    email: form.email.toLowerCase().trim(),
+                    isRegistered: true,
+                    country: 'España',
+                    currency: 'EUR',
+                    avatar: '🧳',
+                });
+
+                // Enviar evento a GA4 (sin PII — solo método)
+                analytics.register();
+
+                // Enviar email de bienvenida + marketing en paralelo
+                const [welcomeOk] = await Promise.allSettled([
+                    sendWelcomeEmail(form.name.trim(), form.email.trim()),
+                    sendMarketingEmail(form.name.trim(), form.email.trim()),
+                ]);
+
+                if (welcomeOk.status === 'fulfilled' && welcomeOk.value) {
+                    addToast('¡Cuenta creada! Revisa tu email para el mensaje de bienvenida.', 'success');
+                } else {
+                    addToast('¡Cuenta creada con éxito!', 'success');
+                }
+
+                setAuthModalOpen(false);
+            }
+        } catch {
+            setFieldErrors({ general: 'Error inesperado. Inténtalo de nuevo.' });
+        } finally {
+            setIsSubmitting(false);
         }
-
-        // Simulación de registro/login con nube
-        const userData = {
-            name: form.name || 'Usuario',
-            email: form.email,
-            isRegistered: true,
-            country: 'España',
-            currency: 'EUR',
-            avatar: '🧳'
-        };
-
-        updateUserProfile(userData);
-        analytics.register({ name: userData.name, email: userData.email });
-        
-        addToast(isLogin ? '¡Bienvenido de nuevo!' : '¡Cuenta creada con éxito!', 'success');
-        setAuthModalOpen(false);
     };
 
     const handleGuest = () => {
@@ -53,7 +117,7 @@ export const AuthModal = () => {
                     onClick={() => setAuthModalOpen(false)}
                     className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 />
-                
+
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -62,9 +126,10 @@ export const AuthModal = () => {
                 >
                     {/* Header bg decoration */}
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500" />
-                    
-                    <button 
+
+                    <button
                         onClick={() => setAuthModalOpen(false)}
+                        aria-label="Cerrar modal"
                         className="absolute top-4 right-4 p-2 text-gray-500 hover:text-white transition-colors"
                     >
                         <X size={20} />
@@ -79,11 +144,18 @@ export const AuthModal = () => {
                                 {isLogin ? 'Bienvenido de nuevo' : 'Únete a EasyTrain'}
                             </h2>
                             <p className="text-sm text-gray-400 mt-2">
-                                {isLogin 
-                                    ? 'Accede a tus billetes y preferencias guardadas.' 
+                                {isLogin
+                                    ? 'Accede a tus billetes y preferencias guardadas.'
                                     : 'Crea una cuenta para reservar viajes y gestionar tus trayectos.'}
                             </p>
                         </div>
+
+                        {/* Error general */}
+                        {fieldErrors.general && (
+                            <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400 font-medium">
+                                {fieldErrors.general}
+                            </div>
+                        )}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {!isLogin && (
@@ -91,12 +163,15 @@ export const AuthModal = () => {
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nombre</label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                        <input 
+                                        <input
                                             type="text"
                                             value={form.name}
-                                            onChange={e => setForm({...form, name: e.target.value})}
+                                            onChange={e => { setForm({...form, name: e.target.value}); clearErrors(); }}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
                                             placeholder="Tu nombre completo"
+                                            minLength={2}
+                                            maxLength={50}
+                                            autoComplete="name"
                                         />
                                     </div>
                                 </div>
@@ -106,12 +181,14 @@ export const AuthModal = () => {
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                    <input 
+                                    <input
                                         type="email"
                                         value={form.email}
-                                        onChange={e => setForm({...form, email: e.target.value})}
+                                        onChange={e => { setForm({...form, email: e.target.value}); clearErrors(); }}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
                                         placeholder="tu@email.com"
+                                        required
+                                        autoComplete="email"
                                     />
                                 </div>
                             </div>
@@ -120,27 +197,41 @@ export const AuthModal = () => {
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Contraseña</label>
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-                                    <input 
+                                    <input
                                         type="password"
                                         value={form.password}
-                                        onChange={e => setForm({...form, password: e.target.value})}
+                                        onChange={e => { setForm({...form, password: e.target.value}); clearErrors(); }}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
-                                        placeholder="••••••••"
+                                        placeholder={isLogin ? 'Tu contraseña' : 'Mínimo 6 caracteres'}
+                                        minLength={6}
+                                        required
+                                        autoComplete={isLogin ? 'current-password' : 'new-password'}
                                     />
                                 </div>
                             </div>
 
-                            <button type="submit" className="w-full btn-primary py-3 text-sm mt-4">
-                                {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full btn-primary py-3 text-sm mt-4 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        <span>{isLogin ? 'Accediendo...' : 'Creando cuenta...'}</span>
+                                    </>
+                                ) : (
+                                    <span>{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</span>
+                                )}
                             </button>
                         </form>
 
                         <div className="mt-6 flex flex-col gap-3">
-                            <button 
-                                onClick={() => setIsLogin(!isLogin)}
+                            <button
+                                onClick={() => { setIsLogin(!isLogin); clearErrors(); }}
                                 className="text-xs text-gray-500 hover:text-white transition-colors text-center font-bold"
                             >
-                                {isLogin ? '¿No tienes cuenta? Registrate' : '¿Ya tienes cuenta? Inicia sesión'}
+                                {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
                             </button>
 
                             <div className="relative flex items-center py-2">
@@ -149,7 +240,7 @@ export const AuthModal = () => {
                                 <div className="flex-grow border-t border-white/5"></div>
                             </div>
 
-                            <button 
+                            <button
                                 onClick={handleGuest}
                                 className="w-full py-3 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2 group"
                             >

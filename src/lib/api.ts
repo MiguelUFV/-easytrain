@@ -33,6 +33,9 @@ const stationNameCache = new Map<string, string>([
     ['8814001', 'Bruxelles-Midi'],
     ['8821006', 'Antwerpen-Centraal'],
     ['8813003', 'Brugge'],
+    ['8300003', 'Milano Centrale'],
+    ['8300259', 'Roma Termini'],
+    ['7100002', 'Valencia-Joaquín Sorolla'],
 ]);
 
 const stationCoordsCache = new Map<string, { lat: number; lng: number }>();
@@ -201,6 +204,7 @@ export const FALLBACK_STATIONS: Station[] = [
     // España
     { id: '7100000', name: 'Madrid-Puerta de Atocha', city: 'Madrid',    country: 'España',       coordinates: { lat: 40.4068, lng: -3.6921 }, tier: 1 },
     { id: '7100018', name: 'Barcelona-Sants',          city: 'Barcelona', country: 'España',       coordinates: { lat: 41.3789, lng:  2.1402 }, tier: 1 },
+    { id: '7100002', name: 'Valencia-Joaquín Sorolla', city: 'Valencia',  country: 'España',       coordinates: { lat: 39.4589, lng: -0.3813 }, tier: 1 },
     // Alemania
     { id: '8011160', name: 'Berlin Hbf',               city: 'Berlin',    country: 'Alemania',     coordinates: { lat: 52.5251, lng: 13.3694 }, tier: 1 },
     { id: '8000261', name: 'München Hbf',              city: 'München',   country: 'Alemania',     coordinates: { lat: 48.1402, lng: 11.5583 }, tier: 1 },
@@ -221,7 +225,7 @@ export const FALLBACK_STATIONS: Station[] = [
     { id: '8821006', name: 'Antwerpen-Centraal',       city: 'Amberes',   country: 'Bélgica',      coordinates: { lat: 51.2170, lng:  4.4213 }, tier: 2 },
     { id: '8813003', name: 'Brugge',                   city: 'Brujas',    country: 'Bélgica',      coordinates: { lat: 51.1973, lng:  3.2162 }, tier: 2 },
     // Italia
-    { id: '8300011', name: 'Roma Termini',             city: 'Roma',      country: 'Italia',       coordinates: { lat: 41.9009, lng: 12.5012 }, tier: 1 },
+    { id: '8300259', name: 'Roma Termini',             city: 'Roma',      country: 'Italia',       coordinates: { lat: 41.9009, lng: 12.5012 }, tier: 1 },
     { id: '8300003', name: 'Milano Centrale',          city: 'Milán',     country: 'Italia',       coordinates: { lat: 45.4855, lng:  9.2045 }, tier: 1 },
 ];
 

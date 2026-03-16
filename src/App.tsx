@@ -130,6 +130,10 @@ const Dashboard = () => {
   };
 
   const handleDestinationClick = async (city: string, country: string, stationId: string) => {
+    // Buscar si tenemos el nombre real en nuestras estaciones fallback
+    const { FALLBACK_STATIONS } = await import('./lib/api');
+    const fallback = FALLBACK_STATIONS.find(s => s.id === stationId);
+    
     const defaultOrigin: StationType = {
       id: '7100000',
       name: 'Madrid-Puerta de Atocha',
@@ -137,7 +141,12 @@ const Dashboard = () => {
       country: 'España'
     };
 
-    const destStation: StationType = {
+    const destStation: StationType = fallback ? {
+      id: fallback.id,
+      name: fallback.name,
+      city: fallback.city,
+      country: fallback.country
+    } : {
       id: stationId,
       name: `${city} Central`,
       city: city,

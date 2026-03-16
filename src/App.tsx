@@ -4,26 +4,28 @@ import { motion } from 'framer-motion';
 import {
   Train, LayoutDashboard, Calendar, Settings as SettingsIcon,
   Map, Zap, Ticket, Heart, TrendingDown, AlertCircle,
-  Bell, History, User, ChevronRight, Loader2
+  Bell, History, User, ChevronRight, Loader2, X
 } from 'lucide-react';
 import { useTrainStore } from './store/useTrainStore';
-import { RouteCard } from './components/RouteCard';
+import { RouteCard } from './components/ui/RouteCard';
 import { fetchRoutes, fetchPopularRoutes } from './lib/api';
-import { SearchPanel } from './components/SearchPanel';
-import { SearchHistoryPanel, SearchHistoryPage } from './components/SearchHistory';
-import { PriceCalendar } from './components/PriceCalendar';
-import { ToastContainer } from './components/Toast';
-import { OnboardingTour } from './components/OnboardingTour';
+import { SearchPanel } from './components/features/SearchPanel';
+import { SearchHistoryPanel, SearchHistoryPage } from './components/features/SearchHistory';
+import { PriceCalendar } from './components/ui/PriceCalendar';
+import { ToastContainer } from './components/ui/Toast';
+import { OnboardingTour } from './components/ui/OnboardingTour';
+import { CookieBanner } from './components/ui/CookieBanner';
+import { AuthModal } from './components/ui/AuthModal';
 import type { Station, PassengerCounts, Station as StationType } from './types';
 import { trackPageView, analytics } from './lib/analytics';
 
 // Lazy-loaded heavy pages
-const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
-const Map3D = lazy(() => import('./components/Map3D').then(m => ({ default: m.Map3D })));
-const InterrailPlanner = lazy(() => import('./components/InterrailPlanner').then(m => ({ default: m.InterrailPlanner })));
-const PriceAlertsPage = lazy(() => import('./components/PriceAlertsPage').then(m => ({ default: m.PriceAlertsPage })));
-const TicketsPage = lazy(() => import('./components/TicketsPage').then(m => ({ default: m.TicketsPage })));
-const ProfilePage = lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const Map3D = lazy(() => import('./components/maps/Map3D').then(m => ({ default: m.Map3D })));
+const InterrailPlanner = lazy(() => import('./components/features/InterrailPlanner').then(m => ({ default: m.InterrailPlanner })));
+const PriceAlertsPage = lazy(() => import('./pages/PriceAlertsPage').then(m => ({ default: m.PriceAlertsPage })));
+const TicketsPage = lazy(() => import('./pages/TicketsPage').then(m => ({ default: m.TicketsPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 
 const PageLoader = () => (
   <div className="flex-1 flex items-center justify-center min-h-[50vh]">
@@ -86,7 +88,13 @@ const Dashboard = () => {
     setCalendarFrom(params.fromStation ?? null);
     setCalendarTo(params.toStation ?? null);
     // Track search in Google Analytics
-    analytics.searchRoute(params.fromStation?.name ?? params.from, params.toStation?.name ?? params.to);
+    analytics.searchRoute({
+      origin: params.fromStation?.name ?? params.from,
+      destination: params.toStation?.name ?? params.to,
+      trip_type: params.tripType,
+      passengers: params.passengers.adults + params.passengers.children + params.passengers.infants,
+      departure_date: params.departureDate
+    });
     try {
       const filtered = await fetchRoutes(params.from, params.to, params.departureDate);
       // Single source of truth: store.routes
@@ -450,7 +458,17 @@ const FavoritesPage = () => {
 };
 
 export const App = () => {
-  const { setOfflineStatus } = useTrainStore();
+  const { setOfflineStatus, userProfile, isAnonymousMode, setAuthModalOpen } = useTrainStore();
+
+  useEffect(() => {
+    // Show auth modal if not registered and not in anonymous mode
+    if (!userProfile.isRegistered && !isAnonymousMode) {
+      const timer = setTimeout(() => {
+        setAuthModalOpen(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [userProfile.isRegistered, isAnonymousMode, setAuthModalOpen]);
 
   useEffect(() => {
     const handleOnline = () => setOfflineStatus(false);
@@ -489,6 +507,8 @@ export const App = () => {
         <BottomNav />
         <ToastContainer />
         <OnboardingTour />
+        <CookieBanner />
+        <AuthModal />
       </div>
     </Router>
   );
@@ -525,17 +545,21 @@ const Sidebar = () => {
   return (
     <aside className="hidden md:flex w-64 border-r border-white/5 flex-col gap-6 flex-shrink-0" style={{ background: 'var(--bg-sidebar)' }}>
       {/* Logo */}
-      <div className="px-6 pt-7 pb-4 flex items-center gap-3">
-        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
-          <Train size={20} strokeWidth={2.5} />
+      <div className="px-6 pt-7 pb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
+            <Train size={20} strokeWidth={2.5} />
+          </div>
+          <span className="text-lg font-black tracking-tight gradient-text">EasyTrain</span>
         </div>
-        <span className="text-lg font-black tracking-tight gradient-text">EasyTrain</span>
       </div>
 
       <nav className="flex flex-col gap-1 px-3 flex-1">
         <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Dashboard" active={location.pathname === '/'} />
         <NavItem to="/interrail" icon={<Calendar size={18} />} label="Planificador Interrail" active={location.pathname === '/interrail'} badge="New" />
-        <NavItem to="/tickets" icon={<Ticket size={18} />} label="Mis Billetes" active={location.pathname === '/tickets'} />
+        {useTrainStore.getState().bookingClicks.length > 0 && (
+          <NavItem to="/tickets" icon={<Ticket size={18} />} label="Mis Billetes" active={location.pathname === '/tickets'} />
+        )}
         <NavItem to="/favorites" icon={<Heart size={18} />} label="Favoritos" active={location.pathname === '/favorites'} />
         <NavItem to="/alerts" icon={<Bell size={18} />} label="Alertas de Precio" active={location.pathname === '/alerts'} />
         <NavItem to="/history" icon={<History size={18} />} label="Historial" active={location.pathname === '/history'} />
@@ -543,9 +567,32 @@ const Sidebar = () => {
         <div className="my-3 border-t border-white/5" />
         <NavItem to="/profile" icon={<User size={18} />} label="Mi Perfil" active={location.pathname === '/profile'} />
         <NavItem to="/settings" icon={<SettingsIcon size={18} />} label="Configuración" active={location.pathname === '/settings'} />
+        
+        {useTrainStore.getState().userProfile.isRegistered && (
+           <button 
+             onClick={() => {
+               if (confirm('¿Cerrar sesión?')) {
+                 useTrainStore.getState().logout();
+               }
+             }}
+             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400/60 hover:text-red-400 hover:bg-red-400/5 transition-all font-semibold text-sm mt-auto mb-2"
+           >
+             <X size={18} />
+             <span>Cerrar Sesión</span>
+           </button>
+        )}
       </nav>
 
-      <div className="px-3 pb-6">
+      <div className="px-3 pb-6 flex flex-col gap-3">
+        {!useTrainStore.getState().userProfile.isRegistered && (
+          <button 
+            onClick={() => useTrainStore.getState().setAuthModalOpen(true)}
+            className="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-black uppercase tracking-widest rounded-xl border border-indigo-500/20 transition-all flex items-center justify-center gap-2"
+          >
+            <User size={14} />
+            Iniciar Sesión
+          </button>
+        )}
         <div className="p-4 rounded-2xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
           <div className="flex items-center gap-2 text-indigo-400 mb-2">
             <Zap size={14} fill="currentColor" />
@@ -673,7 +720,9 @@ const BottomNav = () => {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-6 z-[2000]">
       <MobileNavItem to="/" icon={<LayoutDashboard size={20} />} active={location.pathname === '/'} label="Home" />
       <MobileNavItem to="/interrail" icon={<Calendar size={20} />} active={location.pathname === '/interrail'} label="Plan" />
-      <MobileNavItem to="/tickets" icon={<Ticket size={20} />} active={location.pathname === '/tickets'} label="Billetes" />
+      {useTrainStore.getState().bookingClicks.length > 0 && (
+        <MobileNavItem to="/tickets" icon={<Ticket size={20} />} active={location.pathname === '/tickets'} label="Billetes" />
+      )}
       <MobileNavItem to="/map" icon={<Map size={20} />} active={location.pathname === '/map'} label="Mapa" />
       <MobileNavItem to="/profile" icon={<User size={20} />} active={location.pathname === '/profile'} label="Tú" />
     </nav>

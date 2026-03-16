@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EuropeMap } from './EuropeMap';
-import { useTrainStore } from '../store/useTrainStore';
+import { useTrainStore } from '../../store/useTrainStore';
 import { Clock, Train, AlertCircle, Share2, Info, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { BookingButton } from './BookingButton';
+import { BookingButton } from '../ui/BookingButton';
 
 export const Map3D = () => {
     const { selectedRouteId, setSelectedRouteId, routes: searchResults, setInterrailRouteMode } = useTrainStore();

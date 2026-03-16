@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, Plus, Minus, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { PassengerCounts } from '../types';
+import type { PassengerCounts } from '../../types';
 
 interface PassengerSelectorProps {
   value: PassengerCounts;

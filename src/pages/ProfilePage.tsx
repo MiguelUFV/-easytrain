@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Save, Globe, CreditCard, Mail } from 'lucide-react';
 import { useTrainStore } from '../store/useTrainStore';
-import { useToastStore } from './Toast.tsx';
+import { useToastStore } from '../components/ui/Toast';
 
 const AVATARS = ['🧳', '🚆', '🗺️', '✈️', '🎒', '🌍', '🚂', '🧭'];
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
@@ -33,10 +33,34 @@ const StatProgress = ({ label, value, max, unit, color }: { label: string, value
 );
 
 export const ProfilePage = () => {
-    const { userProfile, updateUserProfile, favorites, searchHistory, priceAlerts } = useTrainStore();
+    const { userProfile, updateUserProfile, favorites, searchHistory, priceAlerts, isAnonymousMode, setAuthModalOpen, logout } = useTrainStore();
     const { addToast } = useToastStore();
     const [saved, setSaved] = useState(false);
     const [form, setForm] = useState({ ...userProfile });
+
+    if (isAnonymousMode && !userProfile.isRegistered) {
+        return (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-8 md:p-10 flex flex-col items-center justify-center text-center">
+                <div className="max-w-md glass-card p-12 border-indigo-500/20 shadow-2xl shadow-indigo-500/10">
+                    <div className="w-20 h-20 bg-indigo-500/10 rounded-3xl flex items-center justify-center text-indigo-400 mb-8 mx-auto border border-indigo-500/20">
+                        <User size={40} />
+                    </div>
+                    <h2 className="text-3xl font-black text-white tracking-tight mb-4">¿Listo para viajar?</h2>
+                    <p className="text-gray-400 mb-8 leading-relaxed">
+                        Actualmente estás navegando como invitado. Regístrate para guardar tus rutas favoritas, recibir alertas de precio y comprar billetes de forma segura.
+                    </p>
+                    <div className="flex flex-col gap-4">
+                        <button 
+                            onClick={() => setAuthModalOpen(true)}
+                            className="btn-primary py-4 text-sm font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20"
+                        >
+                            Crear una Cuenta
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-8 md:p-10 overflow-y-auto">
@@ -179,6 +203,21 @@ export const ProfilePage = () => {
                                 <Save size={15} />
                                 {userProfile.isRegistered ? (saved ? '¡Guardado!' : 'Actualizar') : 'Registrarse Ahora'}
                             </motion.button>
+                            
+                            {userProfile.isRegistered && (
+                                <motion.button
+                                    onClick={() => {
+                                        if (confirm('¿Estás seguro de que quieres cerrar sesión? Se borrarán tus datos locales.')) {
+                                            logout();
+                                            addToast('Sesión cerrada correctamente', 'info');
+                                        }
+                                    }}
+                                    whileTap={{ scale: 0.97 }}
+                                    className="px-4 py-2 text-xs font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest"
+                                >
+                                    Cerrar Sesión
+                                </motion.button>
+                            )}
                         </div>
                     </div>
 

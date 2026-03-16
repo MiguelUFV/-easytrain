@@ -35,6 +35,10 @@ interface TrainActions {
     updateSettings: (newSettings: Partial<AppState['settings']>) => void;
     // Onboarding
     completeOnboarding: () => void;
+    // Auth Modal & Anonymous logic
+    setAuthModalOpen: (isOpen: boolean) => void;
+    setAnonymousMode: (isAnonymous: boolean) => void;
+    logout: () => void;
 }
 
 export const useTrainStore = create<AppState & TrainActions>()(
@@ -64,6 +68,8 @@ export const useTrainStore = create<AppState & TrainActions>()(
             isOffline: !navigator.onLine,
             isLoading: false,
             error: null,
+            isAuthModalOpen: false,
+            isAnonymousMode: false,
 
             setLoading: (isLoading) => set({ isLoading }),
             setError: (error) => set({ error }),
@@ -174,6 +180,22 @@ export const useTrainStore = create<AppState & TrainActions>()(
             })),
             updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
             completeOnboarding: () => set({ hasSeenOnboarding: true }),
+            setAuthModalOpen: (isOpen) => set({ isAuthModalOpen: isOpen }),
+            setAnonymousMode: (isAnonymous) => set({ isAnonymousMode: isAnonymous }),
+            logout: () => set({
+                userProfile: {
+                    name: 'Viajero',
+                    email: '',
+                    avatar: '🧳',
+                    country: 'España',
+                    currency: 'EUR',
+                    isRegistered: false,
+                },
+                isAnonymousMode: false,
+                bookingClicks: [],
+                favorites: [],
+                priceAlerts: [],
+            }),
         }),
         {
             name: 'easytrain-storage-v2',
@@ -188,8 +210,10 @@ export const useTrainStore = create<AppState & TrainActions>()(
                 bookingClicks: state.bookingClicks,
                 hasSeenOnboarding: state.hasSeenOnboarding,
                 settings: state.settings,
+                isAnonymousMode: state.isAnonymousMode,
                 // DON'T persist: routes, selectedRouteId, interrailStops,
-                // interrailRouteMode, isLoading, error, isOffline, stations
+                // interrailRouteMode, isLoading, error, isOffline, stations,
+                // isAuthModalOpen
             }),
         }
     )

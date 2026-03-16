@@ -146,4 +146,7 @@ export interface AppState {
         travelInsurance: boolean;
         quickPay: boolean;
     };
+    // Auth
+    isAuthModalOpen: boolean;
+    isAnonymousMode: boolean;
 }

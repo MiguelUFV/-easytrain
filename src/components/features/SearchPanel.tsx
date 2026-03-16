@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Calendar, Search, ArrowRightLeft, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { StationSearch } from './StationSearch';
-import { PassengerSelector } from './PassengerSelector';
-import type { PassengerCounts, Station } from '../types';
+import { StationSearch } from '../ui/StationSearch';
+import { PassengerSelector } from '../ui/PassengerSelector';
+import type { PassengerCounts, Station } from '../../types';
 
 interface SearchPanelProps {
   onSearch: (params: {
@@ -88,8 +88,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
           <StationSearch
             placeholder="¿Desde dónde?"
             value={fromId}
-            onChange={(id, name) => { setFromId(id); setFromName(name); }}
-            onSelect={(s) => { setFromStation(s); setFromId(s.id); setFromName(s.name); }}
+            onChange={(id: string, name: string) => { setFromId(id); setFromName(name); }}
+            onSelect={(s: Station) => { setFromStation(s); setFromId(s.id); setFromName(s.name); }}
           />
         </div>
 
@@ -112,8 +112,8 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
           <StationSearch
             placeholder="¿A dónde vas?"
             value={toId}
-            onChange={(id, name) => { setToId(id); setToName(name); }}
-            onSelect={(s) => { setToStation(s); setToId(s.id); setToName(s.name); }}
+            onChange={(id: string, name: string) => { setToId(id); setToName(name); }}
+            onSelect={(s: Station) => { setToStation(s); setToId(s.id); setToName(s.name); }}
           />
         </div>
 

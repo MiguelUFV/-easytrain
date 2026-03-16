@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExternalLink, CreditCard, ChevronDown, Check, Globe } from 'lucide-react';
-import type { Route, BookingPlatform } from '../types';
+import type { Route, BookingPlatform } from '../../types';
 import {
     getBestPlatform, openBooking, openOfficialBooking,
     routeToBookingParams, detectOperatorKey, getOfficialUrl
-} from '../lib/booking';
-import { useTrainStore } from '../store/useTrainStore';
+} from '../../lib/booking';
+import { useTrainStore } from '../../store/useTrainStore';
 import { useToastStore } from './Toast';
-import { analytics } from '../lib/analytics';
+import { analytics } from '../../lib/analytics';
 
 interface BookingButtonProps {
     route: Route;
@@ -57,7 +57,14 @@ export const BookingButton: React.FC<BookingButtonProps> = ({
             fromCity: params.fromCity,
             toCity: params.toCity,
         });
-        analytics.clickBooking(platform, params.fromCity, params.toCity);
+        analytics.clickBooking({
+            platform: platform,
+            origin: params.fromCity,
+            destination: params.toCity,
+            operator: route.operator,
+            price: route.price,
+            currency: 'EUR'
+        });
     };
 
     const handleOfficial = () => {

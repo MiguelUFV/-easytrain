@@ -185,19 +185,19 @@ const safeDate = (dateStr: string): string => {
 };
 
 export const TicketsPage = () => {
-    const { bookingClicks, favorites, searchHistory } = useTrainStore();
+    const { bookingClicks, searchHistory } = useTrainStore();
 
-    const tickets = favorites.map((route, i) => ({
-        id: `T-${route.id?.slice(0, 6) || i}`,
-        from: route.fromStationName ?? route.fromStationId,
-        to: route.toStationName ?? route.toStationId,
-        date: safeDate(route.departureTime),
-        departure: safeTime(route.departureTime),
-        arrival: safeTime(route.arrivalTime),
+    const tickets = bookingClicks.map((click, i) => ({
+        id: click.id || `T-${i}`,
+        from: click.fromCity,
+        to: click.toCity,
+        date: safeDate(click.timestamp),
+        departure: safeTime(click.timestamp),
+        arrival: safeTime(new Date(new Date(click.timestamp).getTime() + 2 * 60 * 60 * 1000).toISOString()), // Mock arrival +2h
         seat: `Coche ${(i % 8) + 1}, Asiento ${(i * 3 + 1)}A`,
-        operator: route.operator || 'Operador',
-        type: route.type || 'Standard',
-        price: route.price ?? 0,
+        operator: click.platform === 'trainline' ? 'The Trainline' : 'Omio',
+        type: 'Standard',
+        price: 24.90, // Mock price
         status: 'upcoming' as const,
     }));
 

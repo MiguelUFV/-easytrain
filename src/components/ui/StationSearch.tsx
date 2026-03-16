@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchStations } from '../lib/api';
-import type { Station } from '../types';
+import { fetchStations } from '../../lib/api';
+import type { Station } from '../../types';
 
 interface StationSearchProps {
   placeholder: string;

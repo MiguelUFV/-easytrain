@@ -7,8 +7,8 @@ import {
     Check, Zap, Globe, Sun, Snowflake, CloudRain, Flower2,
     MousePointerClick, RotateCcw, TrendingUp, Award, Leaf, Waves, Trees, Landmark
 } from 'lucide-react';
-import { EuropeMap } from './EuropeMap';
-import { stations } from '../lib/mockData';
+import { EuropeMap } from '../maps/EuropeMap';
+import { stations } from '../../lib/mockData';
 import {
     optimizeInterrail,
     generateAlternatives,
@@ -16,15 +16,15 @@ import {
     findOptimalRoute,
     type OptimizationWeights,
     type OptimizedItinerary,
-} from '../lib/InterrailOptimizer';
+} from '../../lib/InterrailOptimizer';
 import { format, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useTrainStore } from '../store/useTrainStore';
-import { useToastStore } from './Toast';
-import type { Route } from '../types';
-import { BookingButton } from './BookingButton';
-import { routeToBookingParams, openOfficialBooking, openBooking } from '../lib/booking';
-import { analytics } from '../lib/analytics';
+import { useTrainStore } from '../../store/useTrainStore';
+import { useToastStore } from '../ui/Toast';
+import type { Route } from '../../types';
+import { BookingButton } from '../ui/BookingButton';
+import { routeToBookingParams, openOfficialBooking, openBooking } from '../../lib/booking';
+import { analytics } from '../../lib/analytics';
 
 // ═══════════════════════════════════════
 // Constantes

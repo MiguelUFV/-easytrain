@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { History, Clock, ArrowRight, Search } from 'lucide-react';
-import { useTrainStore } from '../store/useTrainStore';
+import { useTrainStore } from '../../store/useTrainStore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -66,7 +66,7 @@ export const SearchHistoryPage = () => {
                 </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {searchHistory.map((entry, idx) => (
+                    {searchHistory.map((entry: any, idx: number) => (
                         <motion.div
                             key={entry.id}
                             initial={{ opacity: 0, y: 10 }}

@@ -1,16 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Train, Clock, ArrowRight, Euro, MapPin, AlertCircle, Heart, ChevronDown } from 'lucide-react';
-import type { Route, Station } from '../types';
+import type { Route, Station } from '../../types';
 import { OccupancyIndicator } from './OccupancyIndicator';
 import { ItineraryExporter } from './ItineraryExporter';
 import { format, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useTrainStore } from '../store/useTrainStore';
-import { useToastStore } from './Toast.tsx';
+import { useTrainStore } from '../../store/useTrainStore';
+import { useToastStore } from './Toast';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookingButton } from './BookingButton';
-import { analytics } from '../lib/analytics';
+import { analytics } from '../../lib/analytics';
 
 interface Props {
     route: Route;
@@ -51,7 +51,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
     const navigate = useNavigate();
     const [showItinerary, setShowItinerary] = useState(false);
     const duration = formatDuration(route.departureTime, route.arrivalTime);
-    const isFavorite = favorites.some(r => r.id === route.id);
+    const isFavorite = favorites.some((r: Route) => r.id === route.id);
     const isSelected = selectedRouteId === route.id;
 
     const handleCardClick = () => {
@@ -100,7 +100,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                         onClick={(e) => {
                             e.stopPropagation();
                             toggleFavorite(route);
-                            const wasFavorite = favorites.some(r => r.id === route.id);
+                            const wasFavorite = favorites.some((r: Route) => r.id === route.id);
                             if (!wasFavorite) analytics.addFavorite(route.id);
                             addToast(wasFavorite ? 'Eliminado de favoritos' : 'Añadido a favoritos', wasFavorite ? 'info' : 'success');
                         }}
@@ -209,7 +209,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                     >
                         <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
                             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Paradas Intermedias</div>
-                            {route.stops.map((stop, idx) => (
+                            {route.stops.map((stop: any, idx: number) => (
                                 <div key={idx} className="flex gap-4 group">
                                     <div className="flex flex-col items-center">
                                         <div className="w-2 h-2 rounded-full bg-indigo-500/50 group-hover:bg-indigo-500 transition-colors" />

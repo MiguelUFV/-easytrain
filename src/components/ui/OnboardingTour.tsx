@@ -5,7 +5,7 @@ import {
   Map as MapIcon, Calendar as CalendarIcon, 
   User as UserIcon, Train, Zap 
 } from 'lucide-react';
-import { useTrainStore } from '../store/useTrainStore';
+import { useTrainStore } from '../../store/useTrainStore';
 
 const STEPS = [
   {

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Download, Share2, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { Route } from '../types';
+import type { Route } from '../../types';
 
 interface Props {
     route: Route;
@@ -50,7 +50,7 @@ export const ItineraryExporter = ({ route, fromName, toName }: Props) => {
             route.price ? `Precio estimado: ${route.price} €` : '',
             ``,
             route.stops && route.stops.length > 0
-                ? [`Paradas:`, ...route.stops.map(s => `  · ${s.stationName} - ${s.arrivalTime ? format(new Date(s.arrivalTime), 'HH:mm') : '--:--'}`)].join('\n')
+                ? [`Paradas:`, ...route.stops.map((s: any) => `  · ${s.stationName} - ${s.arrivalTime ? format(new Date(s.arrivalTime), 'HH:mm') : '--:--'}`)].join('\n')
                 : 'Servicio directo',
             ``,
             `Reservar: ${bookingUrl}`,

@@ -171,6 +171,30 @@ const isSwissStation = (id: string) => id.startsWith('85') || id.startsWith('850
 /** Belgian iRail IDs contain "irail" or start with 88 */
 const isBelgianStation = (id: string) => id.includes('irail') || id.startsWith('88') || id.startsWith('008');
 
+/** UIC Country Prefixes */
+const UIC_COUNTRIES: Record<string, string> = {
+    '80': 'Alemania',
+    '85': 'Suiza',
+    '88': 'Bélgica',
+    '81': 'Austria',
+    '84': 'Países Bajos',
+    '87': 'Francia',
+    '83': 'Italia',
+    '71': 'España',
+    '94': 'Portugal',
+    '70': 'Reino Unido',
+    '74': 'Suecia',
+    '76': 'Noruega',
+    '86': 'Dinamarca',
+    '73': 'Grecia',
+    '51': 'Polonia'
+};
+
+function getCountryFromId(id: string): string {
+    const prefix = id.substring(0, 2);
+    return UIC_COUNTRIES[prefix] || 'Europa';
+}
+
 // ─── Estaciones fallback (siempre disponibles) ────────────────────────────────
 
 export const FALLBACK_STATIONS: Station[] = [
@@ -225,8 +249,19 @@ async function fetchStationsFromDB(query: string): Promise<Station[]> {
 }
 
 async function fetchRoutesFromDB(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    let url = `/api-db/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=6&stopovers=true`;
-    if (date && isValidDate(date)) url += `&departure=${encodeURIComponent(date + 'T00:00:00')}`;
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    
+    // Si es hoy, buscamos a partir de la hora actual. Si es futuro, a mediodía para pillar más trenes.
+    let time = '12:00:00';
+    if (isToday) {
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        time = `${h}:${m}:00`;
+    }
+
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    let url = `/api-db/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=10&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
 
     const res = await fetch(url);
     if (!res.ok) throw new Error(`DB API ${res.status}`);
@@ -275,11 +310,12 @@ async function fetchStationsFromSBB(query: string): Promise<Station[]> {
     if (!res.ok) throw new Error(`SBB API ${res.status}`);
     const data = await res.json();
     return (data.stations ?? []).map((s: any) => {
+        const id = String(s.id ?? s.name);
         const station: Station = {
-            id: String(s.id ?? s.name),
+            id,
             name: s.name,
             city: s.name,
-            country: 'Suiza',
+            country: getCountryFromId(id),
             coordinates: s.coordinate ? { lat: s.coordinate.x, lng: s.coordinate.y } : undefined,
         };
         cacheStationName(station.id, station.name);

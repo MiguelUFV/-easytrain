@@ -446,7 +446,6 @@ const Dashboard = () => {
           {calendarFrom && calendarTo && (
             <PriceCalendar
               fromId={calendarFrom.id}
-              fromName={calendarFrom.name}
               toId={calendarTo.id}
               toName={calendarTo.name}
               selectedDate={new Date().toISOString().split('T')[0]}

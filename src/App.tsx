@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useTrainStore } from './store/useTrainStore';
 import { RouteCard } from './components/ui/RouteCard';
-import { fetchRoutes, fetchPopularRoutes } from './lib/api';
+import { fetchRoutes, fetchPopularRoutes, isRegionSupported, getOfficialFallback } from './lib/api';
 import { SearchPanel } from './components/features/SearchPanel';
 import { SearchHistoryPanel, SearchHistoryPage } from './components/features/SearchHistory';
 import { PriceCalendar } from './components/ui/PriceCalendar';
@@ -49,6 +49,7 @@ const Dashboard = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'time'>('time');
+  const [maintenanceOp, setMaintenanceOp] = useState<{ name: string; url: string } | null>(null);
 
   // When entering Dashboard, exit interrail route mode
   useEffect(() => {
@@ -95,6 +96,16 @@ const Dashboard = () => {
       passengers: params.passengers.adults + params.passengers.children + params.passengers.infants,
       departure_date: params.departureDate
     });
+    // Check if region is supported
+    if (!isRegionSupported(params.from, params.to)) {
+      setRoutes([]);
+      setMaintenanceOp(getOfficialFallback(params.from, params.to));
+      setIsSearching(false);
+      return;
+    }
+
+    setMaintenanceOp(null);
+
     try {
       const filtered = await fetchRoutes(params.from, params.to, params.departureDate);
       // Single source of truth: store.routes
@@ -360,10 +371,34 @@ const Dashboard = () => {
                 return <RouteCard key={`${route.id}-${idx}`} route={route} fromStation={fromS} toStation={toS} />;
               })
             ) : (
-              <div className="glass-card p-16 text-center">
-                <div className="text-4xl mb-4">🔍</div>
-                <div className="font-bold text-white mb-2">No se han encontrado rutas</div>
-                <div className="text-sm text-[var(--text-muted)]">Prueba cambiando el origen, destino o la fecha.</div>
+              <div className="glass-card p-16 text-center shadow-2xl border-white/5 relative overflow-hidden group">
+                {maintenanceOp ? (
+                  <>
+                    <div className="absolute inset-0 bg-indigo-500/5 transition-colors group-hover:bg-indigo-500/10" />
+                    <div className="relative z-10">
+                      <div className="w-20 h-20 rounded-3xl bg-indigo-500/10 flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner">
+                        ⚠️
+                      </div>
+                      <h3 className="text-2xl font-black text-white mb-3">En Mantenimiento</h3>
+                      <p className="text-gray-400 max-w-sm mx-auto mb-8 font-medium leading-relaxed">
+                        Actualmente no disponemos de conexión en tiempo real para trayectos internos en 
+                        <span className="text-indigo-400 font-bold"> {maintenanceOp.name}</span>.
+                      </p>
+                      <button 
+                        onClick={() => window.open(maintenanceOp.url, '_blank')}
+                        className="btn-primary px-8 py-4 text-sm font-black shadow-lg shadow-indigo-500/20"
+                      >
+                        Consultar en Web Oficial ({maintenanceOp.name})
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl mb-4">🔍</div>
+                    <div className="font-bold text-white mb-2">No se han encontrado rutas</div>
+                    <div className="text-sm text-[var(--text-muted)]">Prueba cambiando el origen, destino o la fecha.</div>
+                  </>
+                )}
               </div>
             )}
           </div>

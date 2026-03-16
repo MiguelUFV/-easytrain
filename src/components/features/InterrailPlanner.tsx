@@ -25,6 +25,7 @@ import type { Route } from '../../types';
 import { BookingButton } from '../ui/BookingButton';
 import { routeToBookingParams, openOfficialBooking, openBooking } from '../../lib/booking';
 import { analytics } from '../../lib/analytics';
+import { getOfficialLinkByCountry } from '../../lib/api';
 
 // ═══════════════════════════════════════
 // Constantes
@@ -864,19 +865,39 @@ export const InterrailPlanner = () => {
                                                                             }).filter(l => l !== undefined);
                                                                             
                                                                             if (legs.length === 0) return <div className="text-[10px] text-gray-600 italic">Sin ruta directa</div>;
-                                                                            return legs.map((leg, li) => (
-                                                                                <div key={li} className={`flex items-center gap-2 ${li > 0 ? 'mt-1.5 pt-1.5 border-t border-white/5' : ''}`}>
-                                                                                    <ArrowRight size={10} className="text-indigo-400 flex-shrink-0" />
-                                                                                    <div className="flex-1 min-w-0">
-                                                                                        <div className="text-[10px] font-medium truncate">{leg.from.city} → {leg.to.city}</div>
-                                                                                        <div className="text-[8px] text-gray-600">{leg.route.operator} · {formatMinutes(leg.durationMin)}</div>
+                                                                            return legs.map((leg, li) => {
+                                                                                const officialOp = getOfficialLinkByCountry(leg.from.country);
+                                                                                return (
+                                                                                    <div key={li} className={`flex items-center gap-2 ${li > 0 ? 'mt-1.5 pt-1.5 border-t border-white/5' : ''}`}>
+                                                                                        <ArrowRight size={10} className="text-indigo-400 flex-shrink-0" />
+                                                                                        <div className="flex-1 min-w-0">
+                                                                                            <div className="text-[10px] font-medium truncate">{leg.from.city} → {leg.to.city}</div>
+                                                                                            <div className="text-[8px] text-gray-600">
+                                                                                                {leg.route.operator} · {formatMinutes(leg.durationMin)}
+                                                                                                {officialOp && (
+                                                                                                    <span className="ml-2 px-1 rounded bg-amber-500/10 text-amber-500/80 border border-amber-500/10 whitespace-nowrap">
+                                                                                                        Web Oficial
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <div className="text-[10px] font-bold text-indigo-400">{leg.route.price ?? 0}€</div>
+                                                                                            {officialOp ? (
+                                                                                                <button 
+                                                                                                    onClick={() => window.open(officialOp.url, '_blank')}
+                                                                                                    className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 hover:bg-amber-500/20 transition-colors border border-amber-500/20"
+                                                                                                    title={`Consultar en ${officialOp.name}`}
+                                                                                                >
+                                                                                                    <Globe size={12} />
+                                                                                                </button>
+                                                                                            ) : (
+                                                                                                <BookingButton route={leg.route as Route} compact />
+                                                                                            )}
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <div className="text-[10px] font-bold text-indigo-400">{leg.route.price ?? 0}€</div>
-                                                                                        <BookingButton route={leg.route as Route} compact />
-                                                                                    </div>
-                                                                                </div>
-                                                                            ));
+                                                                                );
+                                                                            });
                                                                         })()}
                                                                     </div>
                                                                 </div>

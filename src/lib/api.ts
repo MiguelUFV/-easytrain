@@ -58,6 +58,101 @@ function stableHash(str: string): number {
     return Math.abs(h);
 }
 
+// ─── Mapeo de Operadores Oficiales por Prefijo de País (UIC) ────────────────
+const OFFICIAL_OPERATORS: Record<string, { name: string; url: (from: string, to: string) => string }> = {
+    '71': { 
+        name: 'Renfe', 
+        url: (f, t) => `https://www.renfe.com/es/es/planifica-tu-viaje/buscador-de-billetes.html?origen=${encodeURIComponent(f)}&destino=${encodeURIComponent(t)}` 
+    },
+    '87': { 
+        name: 'SNCF (Francia)', 
+        url: (f, t) => `https://www.sncf-connect.com/app/train/search?origin=${encodeURIComponent(f)}&destination=${encodeURIComponent(t)}` 
+    },
+    '83': { 
+        name: 'Trenitalia (Italia)', 
+        url: () => 'https://www.trenitalia.com/' 
+    },
+    '81': { 
+        name: 'ÖBB (Austria)', 
+        url: (f, t) => `https://tickets.oebb.at/en/ticket?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}` 
+    },
+    '84': { 
+        name: 'NS (Países Bajos)', 
+        url: (f, t) => `https://www.ns.nl/reisplanner/#/?vertrek=${encodeURIComponent(f)}&aankomst=${encodeURIComponent(t)}` 
+    },
+    '70': { 
+        name: 'CP (Portugal)', 
+        url: () => 'https://www.cp.pt/passageiros/en/buy-tickets' 
+    }
+};
+
+/** Determina si una ruta tiene soporte de API de tiempo real */
+export function isRegionSupported(fromId: string, toId: string): boolean {
+    const supportedPrefixes = ['80', '85', '88', '81']; // Alemania, Suiza, Bélgica, Austria (parcial)
+    const fromPrefix = fromId.substring(0, 2);
+    const toPrefix = toId.substring(0, 2);
+    
+    // Si ambos son del mismo país no soportado, no hay soporte
+    if (fromPrefix === toPrefix && !supportedPrefixes.includes(fromPrefix)) return false;
+    
+    return true; 
+}
+
+/** Obtiene la información del operador oficial fallback para regiones sin API */
+export function getOfficialFallback(fromId: string, toId: string) {
+    const prefix = fromId.substring(0, 2);
+    const op = OFFICIAL_OPERATORS[prefix];
+    if (!op) return null;
+    
+    const fromName = resolveStationName(fromId);
+    const toName = resolveStationName(toId);
+    
+    return {
+        name: op.name,
+        url: op.url(fromName, toName)
+    };
+}
+
+// ─── Mapeo de Operadores por nombre de país (para el Diseñador Interrail) ──
+const COUNTRY_OPERATORS: Record<string, { name: string; url: string }> = {
+    'España': { name: 'Renfe', url: 'https://www.renfe.com/' },
+    'Francia': { name: 'SNCF', url: 'https://www.sncf-connect.com/' },
+    'Italia': { name: 'Trenitalia', url: 'https://www.trenitalia.com/' },
+    'Portugal': { name: 'CP', url: 'https://www.cp.pt/' },
+    'Reino Unido': { name: 'National Rail', url: 'https://www.nationalrail.co.uk/' },
+    'Irlanda': { name: 'Irish Rail', url: 'https://www.irishrail.ie/' },
+    'Países Bajos': { name: 'NS', url: 'https://www.ns.nl/' },
+    'Bélgica': { name: 'SNCB/NMBS', url: 'https://www.belgiantrain.be/' },
+    'Luxemburgo': { name: 'CFL', url: 'https://www.cfl.lu/' },
+    'Polonia': { name: 'PKP', url: 'https://www.intercity.pl/' },
+    'Rep. Checa': { name: 'České dráhy', url: 'https://www.cd.cz/' },
+    'Hungría': { name: 'MÁV', url: 'https://www.mavcsoport.hu/' },
+    'Grecia': { name: 'Hellenic Train', url: 'https://www.hellenictrain.gr/' },
+    'Croacia': { name: 'HŽ Putnički prijevoz', url: 'https://www.hzpp.hr/' },
+    'Eslovenia': { name: 'Slovenske železnice', url: 'https://potniski.sz.si/' },
+    'Rumanía': { name: 'CFR Călători', url: 'https://www.cfrcalatori.ro/' },
+    'Bulgaria': { name: 'BDZ', url: 'https://www.bdz.bg/' },
+    'Turquía': { name: 'TCDD', url: 'https://www.tcddtasimacilik.gov.tr/' },
+    'Noruega': { name: 'Vy', url: 'https://www.vy.no/' },
+    'Suecia': { name: 'SJ', url: 'https://www.sj.se/' },
+    'Finlandia': { name: 'VR', url: 'https://www.vr.fi/' },
+    'Dinamarca': { name: 'DSB', url: 'https://www.dsb.dk/' },
+    'Estonia': { name: 'Elron', url: 'https://elron.ee/' },
+    'Letonia': { name: 'Pasažieru vilciens', url: 'https://www.pv.lv/' },
+    'Lituania': { name: 'LTG Link', url: 'https://ltglink.lt/' },
+};
+
+/** Determina si un país tiene soporte de API real completo */
+export function isCountrySupported(country: string): boolean {
+    const supported = ['Alemania', 'Suiza', 'Austria'];
+    return supported.includes(country);
+}
+
+/** Obtiene el link oficial por nombre de país */
+export function getOfficialLinkByCountry(country: string) {
+    return COUNTRY_OPERATORS[country] || null;
+}
+
 // ─── Sanitización de inputs ───────────────────────────────────────────────────
 
 function sanitizeQuery(q: string): string {
@@ -431,49 +526,7 @@ function buildRoute(p: RouteParams): Route {
     };
 }
 
-// ─── Rutas mock (último recurso) ─────────────────────────────────────────────
-
-function getMockRoutes(fromId: string, toId: string): Route[] {
-    if (fromId.includes('7100000') && toId.includes('8727100')) {
-        return [{
-            id: `mock-mad-par-${fromId}-${toId}`,
-            fromStationId: '7100000',
-            toStationId: '8727100',
-            fromStationName: 'Madrid-Puerta de Atocha',
-            toStationName: 'Paris Gare du Nord',
-            departureTime: new Date().toISOString(),
-            arrivalTime: new Date(Date.now() + 3_600_000 * 11).toISOString(),
-            price: 124.50,
-            operator: 'Renfe AVE + SNCF TGV',
-            type: '2 transbordos',
-            legs: 3,
-            occupancy: 0.85,
-            stops: [
-                { stationId: '7100600', stationName: 'Zaragoza-Delicias',                 coordinates: { lat: 41.6592, lng: -0.9123 } },
-                { stationId: '7100018', stationName: '🔄 Transbordo: Barcelona-Sants',     coordinates: { lat: 41.3789, lng:  2.1402 }, isTransfer: true },
-                { stationId: '8775000', stationName: '🔄 Transbordo: Marseille St-Charles',coordinates: { lat: 43.3026, lng:  5.3804 }, isTransfer: true },
-                { stationId: '8768600', stationName: 'Lyon Part-Dieu',                     coordinates: { lat: 45.7606, lng:  4.8597 } },
-            ],
-        }];
-    }
-    return [{
-        id: `mock-${stableHash(fromId + toId)}`,
-        fromStationId: fromId,
-        toStationId: toId,
-        fromStationName: resolveStationName(fromId),
-        toStationName: resolveStationName(toId),
-        departureTime: new Date().toISOString(),
-        arrivalTime: new Date(Date.now() + 3_600_000 * 2).toISOString(),
-        price: 45.50,
-        operator: 'Rail Express',
-        type: 'Alta Velocidad',
-        platform: '4',
-        delay: 0,
-        lineName: 'RE 123',
-        occupancy: 0.3,
-        stops: [],
-    }];
-}
+// ─── Rutas mock (Eliminado por transparencia — Solo links oficiales) ─────────
 
 // ─── API Pública ──────────────────────────────────────────────────────────────
 
@@ -527,7 +580,7 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
 
     if (!routeLimiter.canCall()) {
         console.warn('Rate limit: demasiadas búsquedas de rutas');
-        return getMockRoutes(fromId, toId);
+        return [];
     }
 
     const validDate = date && isValidDate(date) ? date : undefined;
@@ -557,13 +610,13 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     // Ordenar por hora de salida
     unique.sort((a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime());
 
-    return unique.length > 0 ? unique : getMockRoutes(fromId, toId);
+    return unique;
 }
 
 export async function fetchPopularRoutes(): Promise<Route[]> {
     try {
         return await fetchRoutes('8011160', '8010159'); // Berlin → Hamburg (ruta popular real)
     } catch {
-        return getMockRoutes('8011160', '8010159');
+        return [];
     }
 }

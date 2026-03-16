@@ -5,7 +5,7 @@ import { useTrainStore } from '../../store/useTrainStore';
 import { useToastStore } from './Toast';
 import { analytics } from '../../lib/analytics';
 import { registerUser, loginUser, isEmailRegistered } from '../../lib/auth';
-import { sendWelcomeEmail, sendMarketingEmail } from '../../lib/email';
+import { sendWelcomeEmail } from '../../lib/email';
 
 export const AuthModal = () => {
     const { isAuthModalOpen, setAuthModalOpen, setAnonymousMode, updateUserProfile } = useTrainStore();
@@ -80,14 +80,11 @@ export const AuthModal = () => {
                 // Enviar evento a GA4 (sin PII — solo método)
                 analytics.register();
 
-                // Enviar email de bienvenida + marketing en paralelo
-                const [welcomeOk] = await Promise.allSettled([
-                    sendWelcomeEmail(form.name.trim(), form.email.trim()),
-                    sendMarketingEmail(form.name.trim(), form.email.trim()),
-                ]);
+                // Enviar email de bienvenida/verificación
+                const emailOk = await sendWelcomeEmail(form.name.trim(), form.email.trim());
 
-                if (welcomeOk.status === 'fulfilled' && welcomeOk.value) {
-                    addToast('¡Cuenta creada! Revisa tu email para el mensaje de bienvenida.', 'success');
+                if (emailOk) {
+                    addToast('¡Cuenta creada! Revisa tu email de confirmación.', 'success');
                 } else {
                     addToast('¡Cuenta creada con éxito!', 'success');
                 }

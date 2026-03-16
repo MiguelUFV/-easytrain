@@ -44,7 +44,25 @@ const stationNameCache = new Map<string, string>([
     ['8813003', 'Brugge'],
     ['8300003', 'Milano Centrale'],
     ['8300259', 'Roma Termini'],
+    ['8300051', 'Firenze Santa Maria Novella'],
+    ['8300150', 'Venezia Santa Lucia'],
     ['7100002', 'Valencia-Joaquín Sorolla'],
+    ['8100002', 'Wien Hbf'],
+    ['8100173', 'Salzburg Hbf'],
+    ['8100108', 'Innsbruck Hbf'],
+    ['8774100', 'Lyon Part-Dieu'],
+    ['8775100', 'Marseille Saint-Charles'],
+    ['8400282', 'Rotterdam Centraal'],
+    ['8400561', 'Utrecht Centraal'],
+    ['8600626', 'København H'],
+    ['7400001', 'Stockholm Central'],
+    ['7600100', 'Oslo Sentralstasjon'],
+    ['9400006', 'Lisboa Santa Apolónia'],
+    ['9400007', 'Porto Campanhã'],
+    ['5100028', 'Warszawa Centralna'],
+    ['5100075', 'Kraków Główny'],
+    ['5400014', 'Praha hlavní nádraží'],
+    ['5500017', 'Budapest Keleti'],
 ]);
 
 const stationCoordsCache = new Map<string, { lat: number; lng: number }>();
@@ -100,7 +118,8 @@ const OFFICIAL_OPERATORS: Record<string, { name: string; url: (from: string, to:
 
 /** Determina si una ruta tiene soporte de API de tiempo real */
 export function isRegionSupported(fromId: string, toId: string): boolean {
-    const supportedPrefixes = ['80', '85', '88', '81']; // Alemania, Suiza, Bélgica, Austria (parcial)
+    // DB HAFAS resuelve rutas internacionales a través de su red europea
+    const supportedPrefixes = ['80', '85', '88', '81', '87', '84', '83', '86', '74', '76']; // DE, CH, BE, AT, FR, NL, IT, DK, SE, NO
     const fromPrefix = fromId.substring(0, 2);
     const toPrefix = toId.substring(0, 2);
 
@@ -201,7 +220,20 @@ const UIC_COUNTRIES: Record<string, string> = {
     '76': 'Noruega',
     '86': 'Dinamarca',
     '73': 'Grecia',
-    '51': 'Polonia'
+    '51': 'Polonia',
+    '54': 'Rep. Checa',
+    '55': 'Hungría',
+    '56': 'Eslovaquia',
+    '72': 'Serbia',
+    '78': 'Croacia',
+    '79': 'Eslovenia',
+    '44': 'Turquía',
+    '53': 'Rumanía',
+    '52': 'Bulgaria',
+    '10': 'Finlandia',
+    '25': 'Lituania',
+    '26': 'Letonia',
+    '27': 'Estonia',
 };
 
 function getCountryFromId(id: string): string {
@@ -238,6 +270,35 @@ export const FALLBACK_STATIONS: Station[] = [
     // Italia
     { id: '8300259', name: 'Roma Termini',             city: 'Roma',      country: 'Italia',       coordinates: { lat: 41.9009, lng: 12.5012 }, tier: 1 },
     { id: '8300003', name: 'Milano Centrale',          city: 'Milán',     country: 'Italia',       coordinates: { lat: 45.4855, lng:  9.2045 }, tier: 1 },
+    { id: '8300051', name: 'Firenze Santa Maria Novella', city: 'Florencia', country: 'Italia',    coordinates: { lat: 43.7764, lng: 11.2481 }, tier: 2 },
+    { id: '8300150', name: 'Venezia Santa Lucia',      city: 'Venecia',   country: 'Italia',       coordinates: { lat: 45.4410, lng: 12.3215 }, tier: 2 },
+    // Austria
+    { id: '8100002', name: 'Wien Hbf',                 city: 'Viena',     country: 'Austria',      coordinates: { lat: 48.1853, lng: 16.3769 }, tier: 1 },
+    { id: '8100173', name: 'Salzburg Hbf',             city: 'Salzburgo', country: 'Austria',      coordinates: { lat: 47.8131, lng: 13.0458 }, tier: 2 },
+    { id: '8100108', name: 'Innsbruck Hbf',            city: 'Innsbruck', country: 'Austria',      coordinates: { lat: 47.2632, lng: 11.4010 }, tier: 2 },
+    // Francia
+    { id: '8727100', name: 'Paris Gare de Lyon',       city: 'Paris',     country: 'Francia',      coordinates: { lat: 48.8448, lng:  2.3735 }, tier: 1 },
+    { id: '8774100', name: 'Lyon Part-Dieu',           city: 'Lyon',      country: 'Francia',      coordinates: { lat: 45.7606, lng:  4.8598 }, tier: 2 },
+    { id: '8775100', name: 'Marseille Saint-Charles',  city: 'Marsella',  country: 'Francia',      coordinates: { lat: 43.3031, lng:  5.3804 }, tier: 2 },
+    // Países Bajos
+    { id: '8400282', name: 'Rotterdam Centraal',       city: 'Róterdam',  country: 'Países Bajos', coordinates: { lat: 51.9244, lng:  4.4693 }, tier: 2 },
+    { id: '8400561', name: 'Utrecht Centraal',         city: 'Utrecht',   country: 'Países Bajos', coordinates: { lat: 52.0893, lng:  5.1101 }, tier: 2 },
+    // Dinamarca
+    { id: '8600626', name: 'København H',              city: 'Copenhague', country: 'Dinamarca',   coordinates: { lat: 55.6726, lng: 12.5648 }, tier: 1 },
+    // Suecia
+    { id: '7400001', name: 'Stockholm Central',        city: 'Estocolmo', country: 'Suecia',       coordinates: { lat: 59.3309, lng: 18.0580 }, tier: 1 },
+    // Noruega
+    { id: '7600100', name: 'Oslo Sentralstasjon',      city: 'Oslo',      country: 'Noruega',      coordinates: { lat: 59.9109, lng: 10.7530 }, tier: 1 },
+    // Portugal
+    { id: '9400006', name: 'Lisboa Santa Apolónia',    city: 'Lisboa',    country: 'Portugal',     coordinates: { lat: 38.7139, lng: -9.1228 }, tier: 1 },
+    { id: '9400007', name: 'Porto Campanhã',           city: 'Oporto',    country: 'Portugal',     coordinates: { lat: 41.1488, lng: -8.5854 }, tier: 2 },
+    // Polonia
+    { id: '5100028', name: 'Warszawa Centralna',       city: 'Varsovia',  country: 'Polonia',      coordinates: { lat: 52.2288, lng: 21.0032 }, tier: 1 },
+    { id: '5100075', name: 'Kraków Główny',            city: 'Cracovia',  country: 'Polonia',      coordinates: { lat: 50.0674, lng: 19.9480 }, tier: 2 },
+    // Rep. Checa
+    { id: '5400014', name: 'Praha hlavní nádraží',     city: 'Praga',     country: 'Rep. Checa',   coordinates: { lat: 50.0833, lng: 14.4350 }, tier: 1 },
+    // Hungría
+    { id: '5500017', name: 'Budapest Keleti',          city: 'Budapest',  country: 'Hungría',      coordinates: { lat: 47.5006, lng: 19.0840 }, tier: 1 },
 ];
 
 // ─── API DB (Deutsche Bahn) ───────────────────────────────────────────────────

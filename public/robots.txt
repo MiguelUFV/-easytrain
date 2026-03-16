@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api-db/
+Disallow: /api-ch/
+Disallow: /api-irail/
+
+Sitemap: https://easytrain.vercel.app/sitemap.xml

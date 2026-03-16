@@ -14,10 +14,10 @@ export interface BookingParams {
 
 // ─── Plataformas de reserva ───────────────────────────────────────────────────
 
-// Affiliate IDs — reemplazar con los reales tras registro en cada plataforma
+// Affiliate IDs — configurables via env vars o reemplazar directamente
 const AFFILIATE = {
-    trainline: 'EASYTRAIN_AFFILIATE_ID',
-    omio:      'EASYTRAIN_OMIO_ID',
+    trainline: import.meta.env.VITE_TRAINLINE_AFFILIATE_ID || '',
+    omio:      import.meta.env.VITE_OMIO_AFFILIATE_ID || '',
 };
 
 // ─── Deep-links a webs OFICIALES de cada operador ────────────────────────────
@@ -214,9 +214,11 @@ export function buildTrainlineUrl(params: BookingParams): string {
     p.set('journeySearchType', 'single');
     const n = params.passengers ?? 1;
     for (let i = 0; i < n; i++) p.append('passengers[]', '1990-01-01|1066');
-    p.set('utm_source', AFFILIATE.trainline);
-    p.set('utm_medium', 'affiliate');
-    p.set('utm_campaign', 'easytrain');
+    if (AFFILIATE.trainline) {
+        p.set('utm_source', AFFILIATE.trainline);
+        p.set('utm_medium', 'affiliate');
+        p.set('utm_campaign', 'easytrain');
+    }
     return `${base}?${p}`;
 }
 
@@ -225,7 +227,7 @@ export function buildOmioUrl(params: BookingParams): string {
     const to   = encodeURIComponent(params.toCity);
     const pax  = params.passengers ?? 1;
     let url = `https://www.omio.com/search-frontend/results/train/${from}/${to}/${params.departureDate}/${pax}`;
-    if (AFFILIATE.omio !== 'EASYTRAIN_OMIO_ID') url += `?affiliate=${AFFILIATE.omio}`;
+    if (AFFILIATE.omio) url += `?affiliate=${AFFILIATE.omio}`;
     return url;
 }
 

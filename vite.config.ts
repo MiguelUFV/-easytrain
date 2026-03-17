@@ -20,6 +20,9 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['travel', 'transportation'],
+        lang: 'es',
+        dir: 'ltr',
         icons: [
           {
             src: 'icon-192.png',
@@ -37,7 +40,68 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'maskable'
           }
+        ],
+        screenshots: [
+          {
+            src: 'og-image.png',
+            sizes: '1200x630',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'EasyTrain - Búsqueda de trenes por Europa'
+          }
         ]
+      },
+      workbox: {
+        // Cache de páginas navegadas (SPA)
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api-/],
+        // Runtime caching para APIs externas
+        runtimeCaching: [
+          {
+            // Cache de búsquedas de estaciones (respuestas rápidas)
+            urlPattern: /^\/api-(db|ch|irail)\/.*(locations|stations)/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'station-searches',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 }, // 1h
+            },
+          },
+          {
+            // Cache de rutas/conexiones (datos frescos)
+            urlPattern: /^\/api-(db|ch|irail)\/.*(journeys|connections)/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'route-searches',
+              expiration: { maxEntries: 30, maxAgeSeconds: 5 * 60 }, // 5min
+              networkTimeoutSeconds: 8,
+            },
+          },
+          {
+            // Cache de imágenes externas
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }, // 30 días
+            },
+          },
+          {
+            // Google Fonts
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 },
+            },
+          },
+        ],
       }
     })
   ],

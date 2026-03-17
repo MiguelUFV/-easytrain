@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AppState, BookingClick, InterrailPlan, InterrailStop, PriceAlert, Route, SearchHistoryEntry, Station, UserProfile } from '../types';
-import { logoutUser } from '../lib/authService';
+import { logoutUser } from '../lib/auth';
 
 interface TrainActions {
     setStations: (stations: Station[]) => void;
@@ -195,6 +195,7 @@ export const useTrainStore = create<AppState & TrainActions>()(
                         isRegistered: false,
                     },
                     isAnonymousMode: false,
+                    isAuthModalOpen: false,
                     bookingClicks: [],
                     favorites: [],
                     priceAlerts: [],

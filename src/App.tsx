@@ -16,7 +16,8 @@ import { ToastContainer } from './components/ui/Toast';
 import { OnboardingTour } from './components/ui/OnboardingTour';
 import { CookieBanner } from './components/ui/CookieBanner';
 import { AuthModal } from './components/ui/AuthModal';
-import type { Station, PassengerCounts, Station as StationType } from './types';
+import type { Station, PassengerCounts } from './types';
+type StationType = Station;
 import { trackPageView, analytics } from './lib/analytics';
 
 // Lazy-loaded heavy pages

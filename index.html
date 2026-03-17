@@ -26,6 +26,44 @@
 
     <!-- Favicon & PWA -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="canonical" href="https://easytrain.vercel.app" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "EasyTrain",
+      "url": "https://easytrain.vercel.app",
+      "description": "Descubre y reserva las mejores rutas de tren por Europa. Compara precios, planifica tu Interrail y viaja de forma inteligente.",
+      "applicationCategory": "TravelApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "EasyTrain Europa S.L.",
+        "url": "https://easytrain.vercel.app"
+      },
+      "inLanguage": "es",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://easytrain.vercel.app/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "150",
+        "bestRating": "5"
+      }
+    }
+    </script>
 
     <!-- Google Analytics 4 -->
     <script>

@@ -6,7 +6,11 @@ import { useToastStore } from '../components/ui/Toast';
 
 const AVATARS = ['🧳', '🚆', '🗺️', '✈️', '🎒', '🌍', '🚂', '🧭'];
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
-const COUNTRIES = ['España', 'France', 'Deutschland', 'Italia', 'Portugal', 'United Kingdom', 'Nederland'];
+const COUNTRIES = [
+    'España', 'Francia', 'Alemania', 'Italia', 'Portugal', 'Reino Unido', 'Países Bajos',
+    'Bélgica', 'Suiza', 'Austria', 'Suecia', 'Noruega', 'Dinamarca', 'Polonia',
+    'Rep. Checa', 'Hungría', 'Grecia', 'Croacia', 'Rumanía', 'Irlanda', 'Finlandia',
+];
 
 const Medal = ({ icon, title, desc, achieved }: { icon: string, title: string, desc: string, achieved?: boolean }) => (
     <div className={`p-4 rounded-2xl border transition-all flex flex-col items-center text-center gap-1 ${achieved ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-white/5 border-transparent opacity-40'}`}>
@@ -187,9 +191,13 @@ export const ProfilePage = () => {
                             </div>
                             <motion.button
                                 onClick={() => {
-                                    const isValid = form.name.trim() !== '' && form.email.trim() !== '';
-                                    if (!isValid) {
-                                        addToast('Nombre y Email son obligatorios para registrarse', 'error');
+                                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                    if (!form.name.trim() || form.name.trim().length < 2) {
+                                        addToast('El nombre debe tener al menos 2 caracteres', 'error');
+                                        return;
+                                    }
+                                    if (!emailRegex.test(form.email.trim())) {
+                                        addToast('Introduce un email válido', 'error');
                                         return;
                                     }
                                     updateUserProfile({ ...form, isRegistered: true });

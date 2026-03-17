@@ -165,6 +165,8 @@ export const BookingButton: React.FC<BookingButtonProps> = ({
                     whileHover={{ x: 2 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowDropdown(!showDropdown)}
+                    aria-label="Elegir plataforma de reserva"
+                    aria-expanded={showDropdown}
                     className={`px-3 text-white rounded-r-2xl border-l border-white/10 transition-all flex items-center justify-center ${
                         officialUrl
                             ? 'bg-white/5 hover:bg-white/10'

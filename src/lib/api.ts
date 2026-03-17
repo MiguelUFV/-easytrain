@@ -19,6 +19,10 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  *  3. iRail (Bélgica)         → /api-irail — Bélgica completa (NMBS/SNCB)
  *  4. ÖBB (Austria)           → /api-oebb  — Austria completa (HAFAS)
  *  5. PKP (Polonia)           → /api-pkp   — Polonia completa (HAFAS)
+ *  6. FlixBus (Europa)        → /api-flixbus — Autobuses y trenes FlixTrain por toda Europa
+ *  7. VBB (Berlín/Brandenburg)→ /api-vbb   — Transporte regional Berlín (HAFAS)
+ *  8. BVG (Berlín urbano)     → /api-bvg   — Metro/tranvía/bus Berlín (HAFAS)
+ *  9. Rejseplanen (Dinamarca) → /api-rejse — Dinamarca completa (HAFAS)
  *
  * Fallback: mock data + deep-link a web oficial del operador
  */
@@ -121,7 +125,7 @@ const OFFICIAL_OPERATORS: Record<string, { name: string; url: (from: string, to:
 /** Determina si una ruta tiene soporte de API de tiempo real */
 export function isRegionSupported(fromId: string, toId: string): boolean {
     // DB HAFAS resuelve rutas internacionales a través de su red europea
-    const supportedPrefixes = ['80', '85', '88', '81', '87', '84', '83', '86', '74', '76']; // DE, CH, BE, AT, FR, NL, IT, DK, SE, NO
+    const supportedPrefixes = ['80', '85', '88', '81', '87', '84', '83', '86', '74', '76', '51']; // DE, CH, BE, AT, FR, NL, IT, DK, SE, NO, PL
     const fromPrefix = fromId.substring(0, 2);
     const toPrefix = toId.substring(0, 2);
 
@@ -179,7 +183,7 @@ const COUNTRY_OPERATORS: Record<string, { name: string; url: string }> = {
 
 /** Determina si un país tiene soporte de API real completo */
 export function isCountrySupported(country: string): boolean {
-    const supported = ['Alemania', 'Suiza', 'Austria', 'Bélgica', 'Polonia'];
+    const supported = ['Alemania', 'Suiza', 'Austria', 'Bélgica', 'Polonia', 'Dinamarca'];
     return supported.includes(country);
 }
 
@@ -211,6 +215,15 @@ const isAustrianStation = (id: string) => id.startsWith('81') || id.startsWith('
 
 /** Polish station IDs start with 51 */
 const isPolishStation = (id: string) => id.startsWith('51') || id.startsWith('5100');
+
+/** FlixBus station IDs start with flix- */
+const isFlixbusStation = (id: string) => id.startsWith('flix-');
+
+/** Danish station IDs start with 86 */
+const isDanishStation = (id: string) => id.startsWith('86') || id.startsWith('8600');
+
+/** Berlin VBB/BVG station IDs — 900 prefix is VBB/BVG */
+const isBerlinStation = (id: string) => id.startsWith('900');
 
 /** UIC Country Prefixes */
 const UIC_COUNTRIES: Record<string, string> = {
@@ -701,6 +714,280 @@ async function fetchRoutesFromPKP(fromId: string, toId: string, date?: string): 
     });
 }
 
+// ─── API FlixBus (Europa — autobuses + FlixTrain) ───────────────────────────
+
+async function fetchStationsFromFlixbus(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(`/api-flixbus/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    if (!res.ok) throw new Error(`FlixBus API ${res.status}`);
+    const data: any[] = await res.json();
+    return data
+        .filter((loc: any) => loc.type === 'station' || loc.type === 'stop')
+        .map((loc: any) => {
+            const station: Station = {
+                id: `flix-${loc.id}`,
+                name: loc.name,
+                city: loc.address?.city ?? loc.name.split(',')[0],
+                country: getCountryFromId(String(loc.id)),
+                coordinates: loc.location
+                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
+                    : undefined,
+            };
+            cacheStationName(station.id, station.name);
+            return station;
+        });
+}
+
+async function fetchRoutesFromFlixbus(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const cleanFrom = fromId.replace('flix-', '');
+    const cleanTo = toId.replace('flix-', '');
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '06:00:00';
+    if (isToday) {
+        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    const url = `/api-flixbus/journeys?from=${encodeURIComponent(cleanFrom)}&to=${encodeURIComponent(cleanTo)}&results=8&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
+
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`FlixBus API ${res.status}`);
+    const data = await res.json();
+    if (!data?.journeys?.length) return [];
+
+    return data.journeys.map((j: any) => {
+        const legs = j.legs.filter((l: any) => l.origin && l.destination);
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
+        const stableId = j.refreshToken || `flix-${first.origin.id}-${last.destination.id}-${first.departure}`;
+
+        return buildRoute({
+            id: stableId,
+            fromStationId: first.origin.id,
+            toStationId: last.destination.id,
+            fromStationName: first.origin.name,
+            toStationName: last.destination.name,
+            fromCoords: first.origin.location,
+            toCoords: last.destination.location,
+            departureTime: first.departure,
+            arrivalTime: last.arrival,
+            price: j.price?.amount,
+            operator: operators.join(' → ') || 'FlixBus/FlixTrain',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'FlixBus'),
+            platform: first.departurePlatform,
+            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
+            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
+            legs: legs.length,
+            stops: buildStopsFromLegs(legs),
+        });
+    });
+}
+
+// ─── API VBB (Berlín/Brandenburg — HAFAS) ───────────────────────────────────
+
+async function fetchStationsFromVBB(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(`/api-vbb/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    if (!res.ok) throw new Error(`VBB API ${res.status}`);
+    const data: any[] = await res.json();
+    return data
+        .filter((loc: any) => loc.type === 'station')
+        .map((loc: any) => {
+            const station: Station = {
+                id: String(loc.id),
+                name: loc.name,
+                city: loc.address?.city ?? 'Berlin',
+                country: 'Alemania',
+                coordinates: loc.location
+                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
+                    : undefined,
+            };
+            cacheStationName(station.id, station.name);
+            return station;
+        });
+}
+
+async function fetchRoutesFromVBB(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '08:00:00';
+    if (isToday) {
+        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    const url = `/api-vbb/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=6&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
+
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`VBB API ${res.status}`);
+    const data = await res.json();
+    if (!data?.journeys?.length) return [];
+
+    return data.journeys.map((j: any) => {
+        const legs = j.legs.filter((l: any) => l.origin && l.destination);
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
+        const stableId = j.refreshToken || `vbb-${first.origin.id}-${last.destination.id}-${first.departure}`;
+        cacheStationName(first.origin.id, first.origin.name);
+        cacheStationName(last.destination.id, last.destination.name);
+
+        return buildRoute({
+            id: stableId,
+            fromStationId: first.origin.id,
+            toStationId: last.destination.id,
+            fromStationName: first.origin.name,
+            toStationName: last.destination.name,
+            fromCoords: first.origin.location,
+            toCoords: last.destination.location,
+            departureTime: first.departure,
+            arrivalTime: last.arrival,
+            price: j.price?.amount,
+            operator: operators.join(' → ') || 'VBB',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Regional'),
+            platform: first.departurePlatform,
+            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
+            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
+            legs: legs.length,
+            stops: buildStopsFromLegs(legs),
+        });
+    });
+}
+
+// ─── API BVG (Berlín urbano — HAFAS) ────────────────────────────────────────
+
+async function fetchStationsFromBVG(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(`/api-bvg/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    if (!res.ok) throw new Error(`BVG API ${res.status}`);
+    const data: any[] = await res.json();
+    return data
+        .filter((loc: any) => loc.type === 'station')
+        .map((loc: any) => {
+            const station: Station = {
+                id: String(loc.id),
+                name: loc.name,
+                city: 'Berlin',
+                country: 'Alemania',
+                coordinates: loc.location
+                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
+                    : undefined,
+            };
+            cacheStationName(station.id, station.name);
+            return station;
+        });
+}
+
+async function fetchRoutesFromBVG(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '08:00:00';
+    if (isToday) {
+        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    const url = `/api-bvg/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=6&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
+
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`BVG API ${res.status}`);
+    const data = await res.json();
+    if (!data?.journeys?.length) return [];
+
+    return data.journeys.map((j: any) => {
+        const legs = j.legs.filter((l: any) => l.origin && l.destination);
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
+        const stableId = j.refreshToken || `bvg-${first.origin.id}-${last.destination.id}-${first.departure}`;
+
+        return buildRoute({
+            id: stableId,
+            fromStationId: first.origin.id,
+            toStationId: last.destination.id,
+            fromStationName: first.origin.name,
+            toStationName: last.destination.name,
+            fromCoords: first.origin.location,
+            toCoords: last.destination.location,
+            departureTime: first.departure,
+            arrivalTime: last.arrival,
+            price: j.price?.amount,
+            operator: operators.join(' → ') || 'BVG',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'U-Bahn/S-Bahn'),
+            platform: first.departurePlatform,
+            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
+            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
+            legs: legs.length,
+            stops: buildStopsFromLegs(legs),
+        });
+    });
+}
+
+// ─── API Rejseplanen (Dinamarca — HAFAS) ────────────────────────────────────
+
+async function fetchStationsFromRejse(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(`/api-rejse/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    if (!res.ok) throw new Error(`Rejseplanen API ${res.status}`);
+    const data: any[] = await res.json();
+    return data
+        .filter((loc: any) => loc.type === 'station')
+        .map((loc: any) => {
+            const station: Station = {
+                id: String(loc.id),
+                name: loc.name,
+                city: loc.address?.city ?? loc.name.split(',')[0],
+                country: 'Dinamarca',
+                coordinates: loc.location
+                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
+                    : undefined,
+            };
+            cacheStationName(station.id, station.name);
+            return station;
+        });
+}
+
+async function fetchRoutesFromRejse(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '08:00:00';
+    if (isToday) {
+        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    const url = `/api-rejse/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=6&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
+
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`Rejseplanen API ${res.status}`);
+    const data = await res.json();
+    if (!data?.journeys?.length) return [];
+
+    return data.journeys.map((j: any) => {
+        const legs = j.legs.filter((l: any) => l.origin && l.destination);
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
+        const stableId = j.refreshToken || `rejse-${first.origin.id}-${last.destination.id}-${first.departure}`;
+        cacheStationName(first.origin.id, first.origin.name);
+        cacheStationName(last.destination.id, last.destination.name);
+
+        return buildRoute({
+            id: stableId,
+            fromStationId: first.origin.id,
+            toStationId: last.destination.id,
+            fromStationName: first.origin.name,
+            toStationName: last.destination.name,
+            fromCoords: first.origin.location,
+            toCoords: last.destination.location,
+            departureTime: first.departure,
+            arrivalTime: last.arrival,
+            price: j.price?.amount,
+            operator: operators.join(' → ') || 'DSB/Rejseplanen',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Train'),
+            platform: first.departurePlatform,
+            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
+            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
+            legs: legs.length,
+            stops: buildStopsFromLegs(legs),
+        });
+    });
+}
+
 // ─── Helpers internos ─────────────────────────────────────────────────────────
 
 function buildStopsFromLegs(legs: any[]) {
@@ -806,19 +1093,23 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
     const safe = sanitizeQuery(query);
     if (safe.length < 2) return FALLBACK_STATIONS;
 
-    // Lanzar las 5 APIs en paralelo; usar las que respondan
-    const [dbResult, chResult, irailResult, oebbResult, pkpResult] = await Promise.allSettled([
+    // Lanzar las 9 APIs en paralelo; usar las que respondan
+    const apiResults = await Promise.allSettled([
         fetchStationsFromDB(safe),
         fetchStationsFromSBB(safe),
         fetchStationsFromIrail(safe),
         fetchStationsFromOEBB(safe),
         fetchStationsFromPKP(safe),
+        fetchStationsFromFlixbus(safe),
+        fetchStationsFromVBB(safe),
+        fetchStationsFromBVG(safe),
+        fetchStationsFromRejse(safe),
     ]);
 
     const results: Station[] = [];
     const seen = new Set<string>();
 
-    for (const r of [dbResult, chResult, irailResult, oebbResult, pkpResult]) {
+    for (const r of apiResults) {
         if (r.status === 'fulfilled') {
             for (const s of r.value) {
                 const key = s.name.toLowerCase();
@@ -850,18 +1141,26 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const validDate = date && isValidDate(date) ? date : undefined;
 
     // Determinar qué APIs usar según el origen/destino
-    const useDB    = true; // siempre intentamos DB
-    const useSBB   = isSwissStation(fromId) || isSwissStation(toId);
-    const useIrail = isBelgianStation(fromId) || isBelgianStation(toId);
-    const useOEBB  = isAustrianStation(fromId) || isAustrianStation(toId);
-    const usePKP   = isPolishStation(fromId) || isPolishStation(toId);
+    const useDB      = true; // siempre intentamos DB (cubre toda Europa)
+    const useSBB     = isSwissStation(fromId) || isSwissStation(toId);
+    const useIrail   = isBelgianStation(fromId) || isBelgianStation(toId);
+    const useOEBB    = isAustrianStation(fromId) || isAustrianStation(toId);
+    const usePKP     = isPolishStation(fromId) || isPolishStation(toId);
+    const useFlixbus = isFlixbusStation(fromId) || isFlixbusStation(toId);
+    const useVBB     = isBerlinStation(fromId) || isBerlinStation(toId);
+    const useBVG     = isBerlinStation(fromId) || isBerlinStation(toId);
+    const useRejse   = isDanishStation(fromId) || isDanishStation(toId);
 
     const promises: Promise<Route[]>[] = [];
-    if (useDB)    promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
-    if (useSBB)   promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
-    if (useIrail) promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
-    if (useOEBB)  promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
-    if (usePKP)   promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
+    if (useDB)      promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
+    if (useSBB)     promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
+    if (useIrail)   promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
+    if (useOEBB)    promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
+    if (usePKP)     promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
+    if (useFlixbus) promises.push(fetchRoutesFromFlixbus(fromId, toId, validDate).catch(() => []));
+    if (useVBB)     promises.push(fetchRoutesFromVBB(fromId, toId, validDate).catch(() => []));
+    if (useBVG)     promises.push(fetchRoutesFromBVG(fromId, toId, validDate).catch(() => []));
+    if (useRejse)   promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
 
     const results = await Promise.all(promises);
     const merged = results.flat();

@@ -5,6 +5,10 @@
     { "source": "/api-irail/:path*", "destination": "https://api.irail.be/:path*" },
     { "source": "/api-oebb/:path*",  "destination": "https://v6.oebb.transport.rest/:path*" },
     { "source": "/api-pkp/:path*",   "destination": "https://v6.pkp.transport.rest/:path*" },
+    { "source": "/api-flixbus/:path*", "destination": "https://1.flixbus.transport.rest/:path*" },
+    { "source": "/api-vbb/:path*",  "destination": "https://v6.vbb.transport.rest/:path*" },
+    { "source": "/api-bvg/:path*",  "destination": "https://v6.bvg.transport.rest/:path*" },
+    { "source": "/api-rejse/:path*", "destination": "https://v6.rejseplansen.transport.rest/:path*" },
     { "source": "/(.*)",             "destination": "/index.html" }
   ],
   "headers": [

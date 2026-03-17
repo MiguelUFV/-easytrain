@@ -14,9 +14,11 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  * api.ts — Capa de datos multi-API para trenes europeos
  *
  * APIs gratuitas integradas:
- *  1. DB (Deutsche Bahn) v6   → /api-db  — Alemania, Austria, conexiones internacionales
- *  2. SBB (Suiza)             → /api-ch  — Suiza completa (transport.opendata.ch)
+ *  1. DB (Deutsche Bahn) v6   → /api-db    — Alemania + conexiones internacionales
+ *  2. SBB (Suiza)             → /api-ch    — Suiza completa (transport.opendata.ch)
  *  3. iRail (Bélgica)         → /api-irail — Bélgica completa (NMBS/SNCB)
+ *  4. ÖBB (Austria)           → /api-oebb  — Austria completa (HAFAS)
+ *  5. PKP (Polonia)           → /api-pkp   — Polonia completa (HAFAS)
  *
  * Fallback: mock data + deep-link a web oficial del operador
  */
@@ -177,7 +179,7 @@ const COUNTRY_OPERATORS: Record<string, { name: string; url: string }> = {
 
 /** Determina si un país tiene soporte de API real completo */
 export function isCountrySupported(country: string): boolean {
-    const supported = ['Alemania', 'Suiza', 'Austria'];
+    const supported = ['Alemania', 'Suiza', 'Austria', 'Bélgica', 'Polonia'];
     return supported.includes(country);
 }
 
@@ -203,6 +205,12 @@ const isSwissStation = (id: string) => id.startsWith('85') || id.startsWith('850
 
 /** Belgian iRail IDs contain "irail" or start with 88 */
 const isBelgianStation = (id: string) => id.includes('irail') || id.startsWith('88') || id.startsWith('008');
+
+/** Austrian station IDs start with 81 */
+const isAustrianStation = (id: string) => id.startsWith('81') || id.startsWith('8100');
+
+/** Polish station IDs start with 51 */
+const isPolishStation = (id: string) => id.startsWith('51') || id.startsWith('5100');
 
 /** UIC Country Prefixes */
 const UIC_COUNTRIES: Record<string, string> = {
@@ -551,6 +559,148 @@ async function fetchRoutesFromIrail(from: string, to: string, date?: string): Pr
     });
 }
 
+// ─── API ÖBB (Austria — HAFAS) ───────────────────────────────────────────────
+
+async function fetchStationsFromOEBB(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(`/api-oebb/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    if (!res.ok) throw new Error(`ÖBB API ${res.status}`);
+    const data: any[] = await res.json();
+    return data
+        .filter((loc: any) => loc.type === 'station')
+        .map((loc: any) => {
+            const station: Station = {
+                id: String(loc.id),
+                name: loc.name,
+                city: loc.address?.city ?? loc.name.split(',')[0],
+                country: getCountryFromId(String(loc.id)),
+                coordinates: loc.location
+                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
+                    : undefined,
+            };
+            cacheStationName(station.id, station.name);
+            return station;
+        });
+}
+
+async function fetchRoutesFromOEBB(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '12:00:00';
+    if (isToday) {
+        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    const url = `/api-oebb/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=8&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
+
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`ÖBB API ${res.status}`);
+    const data = await res.json();
+    if (!data?.journeys?.length) return [];
+
+    return data.journeys.map((j: any) => {
+        const legs = j.legs.filter((l: any) => l.origin && l.destination);
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        const stops = buildStopsFromLegs(legs);
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
+        const lineNames = legs.map((l: any) => l.line?.name || l.line?.id).filter(Boolean);
+        const stableId = j.refreshToken || `oebb-${first.origin.id}-${last.destination.id}-${first.departure}`;
+        cacheStationName(first.origin.id, first.origin.name);
+        cacheStationName(last.destination.id, last.destination.name);
+
+        return buildRoute({
+            id: stableId,
+            fromStationId: first.origin.id,
+            toStationId: last.destination.id,
+            fromStationName: first.origin.name,
+            toStationName: last.destination.name,
+            fromCoords: first.origin.location,
+            toCoords: last.destination.location,
+            departureTime: first.departure,
+            arrivalTime: last.arrival,
+            price: j.price?.amount,
+            operator: operators.join(' → ') || 'ÖBB',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Train'),
+            platform: first.departurePlatform,
+            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
+            lineName: lineNames.join(' → '),
+            legs: legs.length,
+            stops,
+        });
+    });
+}
+
+// ─── API PKP (Polonia — HAFAS) ───────────────────────────────────────────────
+
+async function fetchStationsFromPKP(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(`/api-pkp/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    if (!res.ok) throw new Error(`PKP API ${res.status}`);
+    const data: any[] = await res.json();
+    return data
+        .filter((loc: any) => loc.type === 'station')
+        .map((loc: any) => {
+            const station: Station = {
+                id: String(loc.id),
+                name: loc.name,
+                city: loc.address?.city ?? loc.name.split(',')[0],
+                country: getCountryFromId(String(loc.id)),
+                coordinates: loc.location
+                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
+                    : undefined,
+            };
+            cacheStationName(station.id, station.name);
+            return station;
+        });
+}
+
+async function fetchRoutesFromPKP(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '12:00:00';
+    if (isToday) {
+        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    const url = `/api-pkp/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=8&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
+
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`PKP API ${res.status}`);
+    const data = await res.json();
+    if (!data?.journeys?.length) return [];
+
+    return data.journeys.map((j: any) => {
+        const legs = j.legs.filter((l: any) => l.origin && l.destination);
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        const stops = buildStopsFromLegs(legs);
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
+        const lineNames = legs.map((l: any) => l.line?.name || l.line?.id).filter(Boolean);
+        const stableId = j.refreshToken || `pkp-${first.origin.id}-${last.destination.id}-${first.departure}`;
+        cacheStationName(first.origin.id, first.origin.name);
+        cacheStationName(last.destination.id, last.destination.name);
+
+        return buildRoute({
+            id: stableId,
+            fromStationId: first.origin.id,
+            toStationId: last.destination.id,
+            fromStationName: first.origin.name,
+            toStationName: last.destination.name,
+            fromCoords: first.origin.location,
+            toCoords: last.destination.location,
+            departureTime: first.departure,
+            arrivalTime: last.arrival,
+            price: j.price?.amount,
+            operator: operators.join(' → ') || 'PKP Intercity',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Train'),
+            platform: first.departurePlatform,
+            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
+            lineName: lineNames.join(' → '),
+            legs: legs.length,
+            stops,
+        });
+    });
+}
+
 // ─── Helpers internos ─────────────────────────────────────────────────────────
 
 function buildStopsFromLegs(legs: any[]) {
@@ -656,17 +806,19 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
     const safe = sanitizeQuery(query);
     if (safe.length < 2) return FALLBACK_STATIONS;
 
-    // Lanzar las 3 APIs en paralelo; usar las que respondan
-    const [dbResult, chResult, irailResult] = await Promise.allSettled([
+    // Lanzar las 5 APIs en paralelo; usar las que respondan
+    const [dbResult, chResult, irailResult, oebbResult, pkpResult] = await Promise.allSettled([
         fetchStationsFromDB(safe),
         fetchStationsFromSBB(safe),
         fetchStationsFromIrail(safe),
+        fetchStationsFromOEBB(safe),
+        fetchStationsFromPKP(safe),
     ]);
 
     const results: Station[] = [];
     const seen = new Set<string>();
 
-    for (const r of [dbResult, chResult, irailResult]) {
+    for (const r of [dbResult, chResult, irailResult, oebbResult, pkpResult]) {
         if (r.status === 'fulfilled') {
             for (const s of r.value) {
                 const key = s.name.toLowerCase();
@@ -701,11 +853,15 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useDB    = true; // siempre intentamos DB
     const useSBB   = isSwissStation(fromId) || isSwissStation(toId);
     const useIrail = isBelgianStation(fromId) || isBelgianStation(toId);
+    const useOEBB  = isAustrianStation(fromId) || isAustrianStation(toId);
+    const usePKP   = isPolishStation(fromId) || isPolishStation(toId);
 
     const promises: Promise<Route[]>[] = [];
     if (useDB)    promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
     if (useSBB)   promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
     if (useIrail) promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
+    if (useOEBB)  promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
+    if (usePKP)   promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
 
     const results = await Promise.all(promises);
     const merged = results.flat();

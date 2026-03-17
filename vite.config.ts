@@ -59,7 +59,7 @@ export default defineConfig({
         runtimeCaching: [
           {
             // Cache de búsquedas de estaciones (respuestas rápidas)
-            urlPattern: /^\/api-(db|ch|irail)\/.*(locations|stations)/,
+            urlPattern: /^\/api-(db|ch|irail|oebb|pkp)\/.*(locations|stations)/,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'station-searches',
@@ -68,7 +68,7 @@ export default defineConfig({
           },
           {
             // Cache de rutas/conexiones (datos frescos)
-            urlPattern: /^\/api-(db|ch|irail)\/.*(journeys|connections)/,
+            urlPattern: /^\/api-(db|ch|irail|oebb|pkp)\/.*(journeys|connections)/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'route-searches',
@@ -120,6 +120,18 @@ export default defineConfig({
             proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
           });
         },
+      },
+      '/api-oebb': {
+        target: 'https://v6.oebb.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-oebb/, ''),
+      },
+      '/api-pkp': {
+        target: 'https://v6.pkp.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-pkp/, ''),
       },
     },
   },

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AppState, BookingClick, InterrailPlan, InterrailStop, PriceAlert, Route, SearchHistoryEntry, Station, UserProfile } from '../types';
+import { logoutUser } from '../lib/authService';
 
 interface TrainActions {
     setStations: (stations: Station[]) => void;
@@ -182,20 +183,23 @@ export const useTrainStore = create<AppState & TrainActions>()(
             completeOnboarding: () => set({ hasSeenOnboarding: true }),
             setAuthModalOpen: (isOpen) => set({ isAuthModalOpen: isOpen }),
             setAnonymousMode: (isAnonymous) => set({ isAnonymousMode: isAnonymous }),
-            logout: () => set({
-                userProfile: {
-                    name: 'Viajero',
-                    email: '',
-                    avatar: '🧳',
-                    country: 'España',
-                    currency: 'EUR',
-                    isRegistered: false,
-                },
-                isAnonymousMode: false,
-                bookingClicks: [],
-                favorites: [],
-                priceAlerts: [],
-            }),
+            logout: () => {
+                logoutUser().catch(() => {});
+                set({
+                    userProfile: {
+                        name: 'Viajero',
+                        email: '',
+                        avatar: '🧳',
+                        country: 'España',
+                        currency: 'EUR',
+                        isRegistered: false,
+                    },
+                    isAnonymousMode: false,
+                    bookingClicks: [],
+                    favorites: [],
+                    priceAlerts: [],
+                });
+            },
         }),
         {
             name: 'easytrain-storage-v2',

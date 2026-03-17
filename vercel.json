@@ -3,6 +3,8 @@
     { "source": "/api-db/:path*",    "destination": "https://v6.db.transport.rest/:path*" },
     { "source": "/api-ch/:path*",    "destination": "https://transport.opendata.ch/v1/:path*" },
     { "source": "/api-irail/:path*", "destination": "https://api.irail.be/:path*" },
+    { "source": "/api-oebb/:path*",  "destination": "https://v6.oebb.transport.rest/:path*" },
+    { "source": "/api-pkp/:path*",   "destination": "https://v6.pkp.transport.rest/:path*" },
     { "source": "/(.*)",             "destination": "/index.html" }
   ],
   "headers": [

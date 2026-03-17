@@ -4,23 +4,51 @@
  * Patrón: ventana deslizante (sliding window).
  */
 
-function createRateLimiter(limit: number, windowMs: number) {
+export interface RateLimiter {
+    canCall(): boolean;
+    remaining(): number;
+    limit: number;
+    /** Seconds until the next call slot opens (0 if available now) */
+    secondsUntilNext(): number;
+}
+
+export class RateLimitError extends Error {
+    type: 'route' | 'station';
+    waitSeconds: number;
+    constructor(type: 'route' | 'station', waitSeconds: number) {
+        super(`Rate limit reached for ${type}. Wait ${waitSeconds}s.`);
+        this.type = type;
+        this.waitSeconds = waitSeconds;
+        this.name = 'RateLimitError';
+    }
+}
+
+function createRateLimiter(limit: number, windowMs: number): RateLimiter {
     const calls: number[] = [];
 
+    const cleanup = () => {
+        const cutoff = Date.now() - windowMs;
+        while (calls.length > 0 && calls[0] < cutoff) calls.shift();
+    };
+
     return {
+        limit,
         canCall(): boolean {
-            const now = Date.now();
-            const cutoff = now - windowMs;
-            while (calls.length > 0 && calls[0] < cutoff) calls.shift();
+            cleanup();
             if (calls.length >= limit) return false;
-            calls.push(now);
+            calls.push(Date.now());
             return true;
         },
         remaining(): number {
-            const now = Date.now();
-            const cutoff = now - windowMs;
-            while (calls.length > 0 && calls[0] < cutoff) calls.shift();
+            cleanup();
             return Math.max(0, limit - calls.length);
+        },
+        secondsUntilNext(): number {
+            cleanup();
+            if (calls.length < limit) return 0;
+            // The oldest call will expire at calls[0] + windowMs
+            const nextSlot = calls[0] + windowMs;
+            return Math.max(0, Math.ceil((nextSlot - Date.now()) / 1000));
         },
     };
 }

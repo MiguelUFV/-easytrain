@@ -2,26 +2,44 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://easytrain.vercel.app/</loc>
-    <lastmod>2026-03-16</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-03-17</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://easytrain.vercel.app/planner</loc>
-    <lastmod>2026-03-16</lastmod>
+    <loc>https://easytrain.vercel.app/interrail</loc>
+    <lastmod>2026-03-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://easytrain.vercel.app/map</loc>
+    <lastmod>2026-03-17</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://easytrain.vercel.app/map</loc>
-    <lastmod>2026-03-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://easytrain.vercel.app/alerts</loc>
+    <lastmod>2026-03-17</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://easytrain.vercel.app/profile</loc>
-    <lastmod>2026-03-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://easytrain.vercel.app/tickets</loc>
+    <lastmod>2026-03-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://easytrain.vercel.app/favorites</loc>
+    <lastmod>2026-03-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://easytrain.vercel.app/history</loc>
+    <lastmod>2026-03-17</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
 </urlset>

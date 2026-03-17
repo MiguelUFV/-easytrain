@@ -5,7 +5,16 @@
       "Bash(npm install -D @tailwindcss/vite)",
       "Bash(npx kill-port 5173 5174)",
       "Bash(npm install leaflet react-leaflet)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5174/)",
+      "WebSearch",
+      "WebFetch(domain:digitransit.fi)",
+      "WebFetch(domain:developer.entur.org)",
+      "Bash(ls -la src/types*)",
+      "Bash(grep -r \"from ''../../lib/analytics''\" src/components/ui/RouteCard.tsx src/pages/TicketsPage.tsx src/pages/PriceAlertsPage.tsx src/components/ui/BookingButton.tsx)",
+      "Bash(ls -la public/icon* public/maskable* public/favicon*)",
+      "Bash(node -e \":*)",
+      "Bash(node -e \"const sharp = require\\(''sharp''\\); console.log\\(''sharp available''\\);\")",
+      "Bash(grep -o '\"\"train-api-cache\"\"\\\\|\"\"map-tiles-cache\"\"\\\\|\"\"image-cache\"\"\\\\|\"\"google-fonts-cache\"\"\\\\|NetworkFirst\\\\|CacheFirst\\\\|StaleWhileRevalidate' dist/sw.js)"
     ]
   }
 }

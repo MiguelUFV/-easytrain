@@ -20,6 +20,7 @@ export const StationSearch: React.FC<StationSearchProps> = ({
   onSelect
 }) => {
   const [inputText, setInputText] = useState(displayName ?? '');
+
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<Station[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +37,7 @@ export const StationSearch: React.FC<StationSearchProps> = ({
       setInputText('');
       setSelectedStation(null);
     }
+
   }, [value, displayName]);
 
   // Fetch suggestions when typing

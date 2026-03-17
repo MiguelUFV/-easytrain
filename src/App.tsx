@@ -16,6 +16,9 @@ import { ToastContainer } from './components/ui/Toast';
 import { OnboardingTour } from './components/ui/OnboardingTour';
 import { CookieBanner } from './components/ui/CookieBanner';
 import { AuthModal } from './components/ui/AuthModal';
+import { ThemeToggle } from './components/ui/ThemeToggle';
+import { useTheme } from './lib/theme';
+import { useI18n } from './lib/i18n';
 import type { Station, PassengerCounts } from './types';
 type StationType = Station;
 import { trackPageView, analytics } from './lib/analytics';
@@ -27,6 +30,8 @@ const InterrailPlanner = lazy(() => import('./components/features/InterrailPlann
 const PriceAlertsPage = lazy(() => import('./pages/PriceAlertsPage').then(m => ({ default: m.PriceAlertsPage })));
 const TicketsPage = lazy(() => import('./pages/TicketsPage').then(m => ({ default: m.TicketsPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const RouteLanding = lazy(() => import('./pages/RouteLanding').then(m => ({ default: m.RouteLanding })));
+const PopularRoutesIndex = lazy(() => import('./pages/RouteLanding').then(m => ({ default: m.PopularRoutesIndex })));
 
 const PageLoader = () => (
   <div className="flex-1 flex items-center justify-center min-h-[50vh]">
@@ -514,6 +519,19 @@ export const App = () => {
     }
   }, [userProfile.isRegistered, isAnonymousMode, setAuthModalOpen]);
 
+  // Initialize theme on mount
+  useEffect(() => {
+    const theme = useTheme.getState().theme;
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.add('light-theme');
+      root.classList.remove('dark-theme');
+    } else {
+      root.classList.add('dark-theme');
+      root.classList.remove('light-theme');
+    }
+  }, []);
+
   useEffect(() => {
     const handleOnline = () => setOfflineStatus(false);
     const handleOffline = () => setOfflineStatus(true);
@@ -543,6 +561,8 @@ export const App = () => {
                 <Route path="/alerts" element={<PriceAlertsPage />} />
                 <Route path="/history" element={<SearchHistoryPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/trenes" element={<PopularRoutesIndex />} />
+                <Route path="/trenes/:route" element={<RouteLanding />} />
               </Routes>
             </Suspense>
             <Footer />
@@ -584,6 +604,22 @@ const DestinationCard = ({ city, country, image, delay, onClick }: { city: strin
   </motion.div>
 );
 
+const LanguageSwitcher = () => {
+  const { language, setLanguage } = useI18n();
+  return (
+    <button
+      onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
+      className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all flex items-center gap-2"
+      title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+    >
+      <span className="text-sm">{language === 'es' ? '🇬🇧' : '🇪🇸'}</span>
+      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+        {language === 'es' ? 'EN' : 'ES'}
+      </span>
+    </button>
+  );
+};
+
 const Sidebar = () => {
   const location = useLocation();
   return (
@@ -608,6 +644,7 @@ const Sidebar = () => {
         <NavItem to="/alerts" icon={<Bell size={18} />} label="Alertas de Precio" active={location.pathname === '/alerts'} />
         <NavItem to="/history" icon={<History size={18} />} label="Historial" active={location.pathname === '/history'} />
         <NavItem to="/map" icon={<Map size={18} />} label="Mapa 3D" active={location.pathname === '/map'} />
+        <NavItem to="/trenes" icon={<TrendingDown size={18} />} label="Rutas Populares" active={location.pathname.startsWith('/trenes')} badge="SEO" />
         <div className="my-3 border-t border-white/5" />
         <NavItem to="/profile" icon={<User size={18} />} label="Mi Perfil" active={location.pathname === '/profile'} />
         <NavItem to="/settings" icon={<SettingsIcon size={18} />} label="Configuración" active={location.pathname === '/settings'} />
@@ -628,8 +665,13 @@ const Sidebar = () => {
       </nav>
 
       <div className="px-3 pb-6 flex flex-col gap-3">
+        {/* Theme & Language toggles */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LanguageSwitcher />
+        </div>
         {!useTrainStore.getState().userProfile.isRegistered && (
-          <button 
+          <button
             onClick={() => useTrainStore.getState().setAuthModalOpen(true)}
             className="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-black uppercase tracking-widest rounded-xl border border-indigo-500/20 transition-all flex items-center justify-center gap-2"
           >

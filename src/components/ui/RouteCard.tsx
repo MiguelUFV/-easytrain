@@ -10,6 +10,8 @@ import { useToastStore } from './Toast';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookingButton } from './BookingButton';
+import { ShareButton } from './ShareButton';
+import { PriceComparator } from './PriceComparator';
 import { analytics } from '../../lib/analytics';
 
 interface Props {
@@ -191,13 +193,19 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                 </div>
             </div>
 
-            {/* Export / Booking buttons */}
+            {/* Export / Booking / Share buttons */}
             <div className="mt-4 pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex-1 min-w-[200px]">
                     <BookingButton route={route} compact />
                 </div>
-                <ItineraryExporter route={route} fromName={fromStation.name} toName={toStation.name} />
+                <div className="flex items-center gap-2">
+                    <ShareButton route={route} />
+                    <ItineraryExporter route={route} fromName={fromStation.name} toName={toStation.name} />
+                </div>
             </div>
+
+            {/* Price Comparator */}
+            <PriceComparator route={route} />
 
             <AnimatePresence>
                 {showItinerary && route.stops && route.stops.length > 0 && (

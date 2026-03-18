@@ -3,13 +3,13 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBjNdcjv4U3rw_sLu0N1fIrcmhRpeMB_Co",
-    authDomain: "easytrain-4a9c1.firebaseapp.com",
-    projectId: "easytrain-4a9c1",
-    storageBucket: "easytrain-4a9c1.firebasestorage.app",
-    messagingSenderId: "106232010703",
-    appId: "1:106232010703:web:b614c999a9c554e72f24ba",
-    measurementId: "G-1W0FSTRQCF"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);

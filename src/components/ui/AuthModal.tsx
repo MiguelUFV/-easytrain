@@ -6,11 +6,12 @@ import { useToastStore } from './Toast';
 import { analytics } from '../../lib/analytics';
 import { registerUser, loginUser, isEmailRegistered } from '../../lib/auth';
 import { sendWelcomeEmail } from '../../lib/email';
+import { loadUserData, getCurrentUid } from '../../lib/firestore-sync';
 
 type AuthTab = 'register' | 'login';
 
 export const AuthModal = () => {
-    const { isAuthModalOpen, setAuthModalOpen, setAnonymousMode, updateUserProfile } = useTrainStore();
+    const { isAuthModalOpen, setAuthModalOpen, setAnonymousMode, updateUserProfile, loadCloudData } = useTrainStore();
     const { addToast } = useToastStore();
     const [tab, setTab] = useState<AuthTab>('register');
     const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -64,6 +65,13 @@ export const AuthModal = () => {
                     isRegistered: true,
                 });
 
+                // Load and merge cloud data (favorites, alerts, history, settings)
+                const uid = getCurrentUid();
+                if (uid) {
+                    const cloudData = await loadUserData(uid);
+                    if (cloudData) loadCloudData(cloudData);
+                }
+
                 addToast(`¡Bienvenido de nuevo, ${result.user!.name}!`, 'success');
                 setAuthModalOpen(false);
             } else {
@@ -89,6 +97,21 @@ export const AuthModal = () => {
                     currency: 'EUR',
                     avatar: '🧳',
                 });
+
+                // Sync existing local data to cloud for the new user
+                // (the debouncedSync in updateUserProfile handles profile,
+                //  but favorites/alerts/history need an explicit push)
+                const uid = getCurrentUid();
+                if (uid) {
+                    const state = useTrainStore.getState();
+                    const { saveFavorites, savePriceAlerts, saveSearchHistory, saveSettings } = await import('../../lib/firestore-sync');
+                    await Promise.all([
+                        state.favorites.length > 0 ? saveFavorites(uid, state.favorites) : Promise.resolve(),
+                        state.priceAlerts.length > 0 ? savePriceAlerts(uid, state.priceAlerts) : Promise.resolve(),
+                        state.searchHistory.length > 0 ? saveSearchHistory(uid, state.searchHistory) : Promise.resolve(),
+                        saveSettings(uid, state.settings),
+                    ]).catch(err => console.warn('[firestore-sync] Initial upload failed:', err));
+                }
 
                 analytics.register();
 

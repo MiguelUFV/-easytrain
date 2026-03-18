@@ -4,6 +4,10 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import './index.css';
+import { initAuthSync } from './store/useTrainStore';
+
+// Inicializar sincronización Firestore ↔ Zustand (escucha auth state)
+initAuthSync();
 
 // Registro de Service Worker para PWA con actualizaciones automáticas
 import { registerSW } from 'virtual:pwa-register';

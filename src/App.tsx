@@ -35,6 +35,7 @@ const TicketsPage = lazy(() => import('./pages/TicketsPage').then(m => ({ defaul
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const RouteLanding = lazy(() => import('./pages/RouteLanding').then(m => ({ default: m.RouteLanding })));
 const PopularRoutesIndex = lazy(() => import('./pages/RouteLanding').then(m => ({ default: m.PopularRoutesIndex })));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 
 const PageLoader = () => (
   <div className="flex-1 flex items-center justify-center min-h-[50vh]">
@@ -576,6 +577,7 @@ export const App = () => {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/trenes" element={<PopularRoutesIndex />} />
                 <Route path="/trenes/:route" element={<RouteLanding />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
               </Routes>
             </Suspense>
             <Footer />
@@ -800,7 +802,7 @@ const Footer = () => (
         <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6" style={{ color: 'var(--text-main)' }}>Legal</h4>
         <ul className="space-y-3 text-[var(--text-muted)] text-xs">
           <li>Términos y Condiciones</li>
-          <li>Política de Privacidad</li>
+          <li><Link to="/privacy" className="footer-link">Política de Privacidad</Link></li>
           <li>Soporte 24/7</li>
         </ul>
       </div>

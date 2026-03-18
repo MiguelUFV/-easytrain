@@ -14,18 +14,11 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  * api.ts — Capa de datos multi-API para trenes europeos
  *
  * APIs gratuitas integradas:
- *  1. DB (Deutsche Bahn) v6   → /api-db    — Alemania + conexiones internacionales
+ *  1. DB (Deutsche Bahn) v6   → /api-db    — Alemania + conexiones internacionales (toda Europa)
  *  2. SBB (Suiza)             → /api-ch    — Suiza completa (transport.opendata.ch)
  *  3. iRail (Bélgica)         → /api-irail — Bélgica completa (NMBS/SNCB)
- *  4. ÖBB (Austria)           → /api-oebb  — Austria completa (HAFAS)
- *  5. PKP (Polonia)           → /api-pkp   — Polonia completa (HAFAS)
- *  6. FlixBus (Europa)        → /api-flixbus — Autobuses y trenes FlixTrain por toda Europa
- *  7. VBB (Berlín/Brandenburg)→ /api-vbb   — Transporte regional Berlín (HAFAS)
- *  8. BVG (Berlín urbano)     → /api-bvg   — Metro/tranvía/bus Berlín (HAFAS)
- *  9. Rejseplanen (Dinamarca) → /api-rejse — Dinamarca completa (HAFAS)
- * 10. Entur (Noruega)          → api.entur.io — Transporte público noruego completo (gratis, sin registro)
- * 11. Digitransit (Finlandia)  → api.digitransit.fi — VR trenes, HSL Helsinki (gratis con API key)
- * 12. Renfe (España)           → data.renfe.com — Estaciones españolas (CKAN open data)
+ *  4. Entur (Noruega)         → api.entur.io — Transporte público noruego (gratis, sin registro)
+ *  5. Renfe (España)          → data.renfe.com — 1896 estaciones españolas (CKAN open data)
  *
  * Fallback: mock data + deep-link a web oficial del operador
  */
@@ -179,11 +172,12 @@ const OFFICIAL_OPERATORS: Record<string, { name: string; url: (from: string, to:
 
 /** Determina si una ruta tiene soporte de API de tiempo real */
 export function isRegionSupported(fromId: string, toId: string): boolean {
+    // DB HAFAS resuelve rutas para la mayoría de Europa vía su red internacional
     const supportedPrefixes = [
         '80', '85', '88', '81', '84', '83', '87', '71', // DE, CH, BE, AT, NL, IT, FR, ES
         '51', '54', '55', '74', '76', '86', '82', '10', // PL, CZ, HU, SE, NO, DK, LU, FI
         '53', '52', '72', '73', '60', '70'              // RO, BG, XS, GR, IE, UK
-    ]; 
+    ];
     const fromPrefix = fromId.substring(0, 2);
     const toPrefix = toId.substring(0, 2);
 
@@ -242,7 +236,7 @@ const COUNTRY_OPERATORS: Record<string, { name: string; url: string }> = {
 /** Determina si un país tiene soporte de API real completo */
 export function isCountrySupported(country: string): boolean {
     const supported = [
-        'Alemania', 'Suiza', 'Austria', 'España', 'Francia', 'Italia', 'Países Bajos', 'Portugal',
+        'Alemania', 'Suiza', 'Austria', 'Bélgica', 'España', 'Francia', 'Italia', 'Países Bajos', 'Portugal',
         'Polonia', 'Rep. Checa', 'Hungría', 'Suecia', 'Noruega', 'Dinamarca', 'Luxemburgo', 'Finlandia',
         'Rumanía', 'Bulgaria', 'Serbia', 'Grecia', 'Irlanda', 'Reino Unido'
     ];
@@ -272,32 +266,8 @@ const isSwissStation = (id: string) => id.startsWith('85') || id.startsWith('850
 /** Belgian iRail IDs contain "irail" or start with 88 */
 const isBelgianStation = (id: string) => id.includes('irail') || id.startsWith('88') || id.startsWith('008');
 
-/** Austrian station IDs start with 81 */
-const isAustrianStation = (id: string) => id.startsWith('81') || id.startsWith('8100');
-
-/** Polish station IDs start with 51 */
-const isPolishStation = (id: string) => id.startsWith('51') || id.startsWith('5100');
-
-/** FlixBus station IDs start with flix- */
-const isFlixbusStation = (id: string) => id.startsWith('flix-');
-
-/** Danish station IDs start with 86 */
-const isDanishStation = (id: string) => id.startsWith('86') || id.startsWith('8600');
-
-/** Berlin VBB/BVG station IDs — 900 prefix is VBB/BVG */
-const isBerlinStation = (id: string) => id.startsWith('900');
-
 /** Norwegian station IDs — Entur uses NSR: prefix */
 const isNorwegianStation = (id: string) => id.startsWith('NSR:') || id.startsWith('entur-');
-
-/** Finnish station IDs — Digitransit uses HSL/Finland-specific IDs */
-const isFinnishStation = (id: string) => id.startsWith('digitransit-');
-
-/** Spanish station IDs — Renfe CKAN or UIC 71 prefix */
-const isSpanishStation = (id: string) => id.startsWith('renfe-') || id.startsWith('71');
-
-/** Digitransit API key (Finland) — gratis en https://digitransit.fi/en/developers/ */
-const DIGITRANSIT_API_KEY = import.meta.env.VITE_DIGITRANSIT_API_KEY || '';
 
 /** UIC Country Prefixes */
 const UIC_COUNTRIES: Record<string, string> = {
@@ -681,422 +651,6 @@ async function fetchRoutesFromIrail(from: string, to: string, date?: string): Pr
     });
 }
 
-// ─── API ÖBB (Austria — HAFAS) ───────────────────────────────────────────────
-
-async function fetchStationsFromOEBB(query: string): Promise<Station[]> {
-    const res = await fetchWithTimeout(`/api-oebb/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
-    if (!res.ok) throw new Error(`ÖBB API ${res.status}`);
-    const data: any[] = await res.json();
-    return data
-        .filter((loc: any) => loc.type === 'station')
-        .map((loc: any) => {
-            const station: Station = {
-                id: String(loc.id),
-                name: loc.name,
-                city: loc.address?.city ?? loc.name.split(',')[0],
-                country: getCountryFromId(String(loc.id)),
-                coordinates: loc.location
-                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
-                    : undefined,
-            };
-            cacheStationName(station.id, station.name);
-            return station;
-        });
-}
-
-async function fetchRoutesFromOEBB(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    const now = new Date();
-    const isToday = !date || date === now.toISOString().split('T')[0];
-    let time = '12:00:00';
-    if (isToday) {
-        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-    }
-    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
-    const url = `/api-oebb/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=8&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
-
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`ÖBB API ${res.status}`);
-    const data = await res.json();
-    if (!data?.journeys?.length) return [];
-
-    return data.journeys.map((j: any) => {
-        const legs = j.legs.filter((l: any) => l.origin && l.destination);
-        const first = legs[0];
-        const last = legs[legs.length - 1];
-        const stops = buildStopsFromLegs(legs);
-        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
-        const lineNames = legs.map((l: any) => l.line?.name || l.line?.id).filter(Boolean);
-        const stableId = j.refreshToken || `oebb-${first.origin.id}-${last.destination.id}-${first.departure}`;
-        cacheStationName(first.origin.id, first.origin.name);
-        cacheStationName(last.destination.id, last.destination.name);
-
-        return buildRoute({
-            id: stableId,
-            fromStationId: first.origin.id,
-            toStationId: last.destination.id,
-            fromStationName: first.origin.name,
-            toStationName: last.destination.name,
-            fromCoords: first.origin.location,
-            toCoords: last.destination.location,
-            departureTime: first.departure,
-            arrivalTime: last.arrival,
-            price: j.price?.amount,
-            operator: operators.join(' → ') || 'ÖBB',
-            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Train'),
-            platform: first.departurePlatform,
-            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
-            lineName: lineNames.join(' → '),
-            legs: legs.length,
-            stops,
-        });
-    });
-}
-
-// ─── API PKP (Polonia — HAFAS) ───────────────────────────────────────────────
-
-async function fetchStationsFromPKP(query: string): Promise<Station[]> {
-    const res = await fetchWithTimeout(`/api-pkp/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
-    if (!res.ok) throw new Error(`PKP API ${res.status}`);
-    const data: any[] = await res.json();
-    return data
-        .filter((loc: any) => loc.type === 'station')
-        .map((loc: any) => {
-            const station: Station = {
-                id: String(loc.id),
-                name: loc.name,
-                city: loc.address?.city ?? loc.name.split(',')[0],
-                country: getCountryFromId(String(loc.id)),
-                coordinates: loc.location
-                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
-                    : undefined,
-            };
-            cacheStationName(station.id, station.name);
-            return station;
-        });
-}
-
-async function fetchRoutesFromPKP(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    const now = new Date();
-    const isToday = !date || date === now.toISOString().split('T')[0];
-    let time = '12:00:00';
-    if (isToday) {
-        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-    }
-    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
-    const url = `/api-pkp/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=8&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
-
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`PKP API ${res.status}`);
-    const data = await res.json();
-    if (!data?.journeys?.length) return [];
-
-    return data.journeys.map((j: any) => {
-        const legs = j.legs.filter((l: any) => l.origin && l.destination);
-        const first = legs[0];
-        const last = legs[legs.length - 1];
-        const stops = buildStopsFromLegs(legs);
-        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
-        const lineNames = legs.map((l: any) => l.line?.name || l.line?.id).filter(Boolean);
-        const stableId = j.refreshToken || `pkp-${first.origin.id}-${last.destination.id}-${first.departure}`;
-        cacheStationName(first.origin.id, first.origin.name);
-        cacheStationName(last.destination.id, last.destination.name);
-
-        return buildRoute({
-            id: stableId,
-            fromStationId: first.origin.id,
-            toStationId: last.destination.id,
-            fromStationName: first.origin.name,
-            toStationName: last.destination.name,
-            fromCoords: first.origin.location,
-            toCoords: last.destination.location,
-            departureTime: first.departure,
-            arrivalTime: last.arrival,
-            price: j.price?.amount,
-            operator: operators.join(' → ') || 'PKP Intercity',
-            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Train'),
-            platform: first.departurePlatform,
-            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
-            lineName: lineNames.join(' → '),
-            legs: legs.length,
-            stops,
-        });
-    });
-}
-
-// ─── API FlixBus (Europa — autobuses + FlixTrain) ───────────────────────────
-
-async function fetchStationsFromFlixbus(query: string): Promise<Station[]> {
-    const res = await fetchWithTimeout(`/api-flixbus/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
-    if (!res.ok) throw new Error(`FlixBus API ${res.status}`);
-    const data: any[] = await res.json();
-    return data
-        .filter((loc: any) => loc.type === 'station' || loc.type === 'stop')
-        .map((loc: any) => {
-            const station: Station = {
-                id: `flix-${loc.id}`,
-                name: loc.name,
-                city: loc.address?.city ?? loc.name.split(',')[0],
-                country: getCountryFromId(String(loc.id)),
-                coordinates: loc.location
-                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
-                    : undefined,
-            };
-            cacheStationName(station.id, station.name);
-            return station;
-        });
-}
-
-async function fetchRoutesFromFlixbus(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    const cleanFrom = fromId.replace('flix-', '');
-    const cleanTo = toId.replace('flix-', '');
-    const now = new Date();
-    const isToday = !date || date === now.toISOString().split('T')[0];
-    let time = '06:00:00';
-    if (isToday) {
-        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-    }
-    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
-    const url = `/api-flixbus/journeys?from=${encodeURIComponent(cleanFrom)}&to=${encodeURIComponent(cleanTo)}&results=8&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
-
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`FlixBus API ${res.status}`);
-    const data = await res.json();
-    if (!data?.journeys?.length) return [];
-
-    return data.journeys.map((j: any) => {
-        const legs = j.legs.filter((l: any) => l.origin && l.destination);
-        const first = legs[0];
-        const last = legs[legs.length - 1];
-        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
-        const stableId = j.refreshToken || `flix-${first.origin.id}-${last.destination.id}-${first.departure}`;
-
-        return buildRoute({
-            id: stableId,
-            fromStationId: first.origin.id,
-            toStationId: last.destination.id,
-            fromStationName: first.origin.name,
-            toStationName: last.destination.name,
-            fromCoords: first.origin.location,
-            toCoords: last.destination.location,
-            departureTime: first.departure,
-            arrivalTime: last.arrival,
-            price: j.price?.amount,
-            operator: operators.join(' → ') || 'FlixBus/FlixTrain',
-            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'FlixBus'),
-            platform: first.departurePlatform,
-            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
-            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
-            legs: legs.length,
-            stops: buildStopsFromLegs(legs),
-        });
-    });
-}
-
-// ─── API VBB (Berlín/Brandenburg — HAFAS) ───────────────────────────────────
-
-async function fetchStationsFromVBB(query: string): Promise<Station[]> {
-    const res = await fetchWithTimeout(`/api-vbb/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
-    if (!res.ok) throw new Error(`VBB API ${res.status}`);
-    const data: any[] = await res.json();
-    return data
-        .filter((loc: any) => loc.type === 'station')
-        .map((loc: any) => {
-            const station: Station = {
-                id: String(loc.id),
-                name: loc.name,
-                city: loc.address?.city ?? 'Berlin',
-                country: 'Alemania',
-                coordinates: loc.location
-                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
-                    : undefined,
-            };
-            cacheStationName(station.id, station.name);
-            return station;
-        });
-}
-
-async function fetchRoutesFromVBB(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    const now = new Date();
-    const isToday = !date || date === now.toISOString().split('T')[0];
-    let time = '08:00:00';
-    if (isToday) {
-        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-    }
-    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
-    const url = `/api-vbb/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=6&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
-
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`VBB API ${res.status}`);
-    const data = await res.json();
-    if (!data?.journeys?.length) return [];
-
-    return data.journeys.map((j: any) => {
-        const legs = j.legs.filter((l: any) => l.origin && l.destination);
-        const first = legs[0];
-        const last = legs[legs.length - 1];
-        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
-        const stableId = j.refreshToken || `vbb-${first.origin.id}-${last.destination.id}-${first.departure}`;
-        cacheStationName(first.origin.id, first.origin.name);
-        cacheStationName(last.destination.id, last.destination.name);
-
-        return buildRoute({
-            id: stableId,
-            fromStationId: first.origin.id,
-            toStationId: last.destination.id,
-            fromStationName: first.origin.name,
-            toStationName: last.destination.name,
-            fromCoords: first.origin.location,
-            toCoords: last.destination.location,
-            departureTime: first.departure,
-            arrivalTime: last.arrival,
-            price: j.price?.amount,
-            operator: operators.join(' → ') || 'VBB',
-            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Regional'),
-            platform: first.departurePlatform,
-            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
-            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
-            legs: legs.length,
-            stops: buildStopsFromLegs(legs),
-        });
-    });
-}
-
-// ─── API BVG (Berlín urbano — HAFAS) ────────────────────────────────────────
-
-async function fetchStationsFromBVG(query: string): Promise<Station[]> {
-    const res = await fetchWithTimeout(`/api-bvg/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
-    if (!res.ok) throw new Error(`BVG API ${res.status}`);
-    const data: any[] = await res.json();
-    return data
-        .filter((loc: any) => loc.type === 'station')
-        .map((loc: any) => {
-            const station: Station = {
-                id: String(loc.id),
-                name: loc.name,
-                city: 'Berlin',
-                country: 'Alemania',
-                coordinates: loc.location
-                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
-                    : undefined,
-            };
-            cacheStationName(station.id, station.name);
-            return station;
-        });
-}
-
-async function fetchRoutesFromBVG(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    const now = new Date();
-    const isToday = !date || date === now.toISOString().split('T')[0];
-    let time = '08:00:00';
-    if (isToday) {
-        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-    }
-    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
-    const url = `/api-bvg/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=6&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
-
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`BVG API ${res.status}`);
-    const data = await res.json();
-    if (!data?.journeys?.length) return [];
-
-    return data.journeys.map((j: any) => {
-        const legs = j.legs.filter((l: any) => l.origin && l.destination);
-        const first = legs[0];
-        const last = legs[legs.length - 1];
-        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
-        const stableId = j.refreshToken || `bvg-${first.origin.id}-${last.destination.id}-${first.departure}`;
-
-        return buildRoute({
-            id: stableId,
-            fromStationId: first.origin.id,
-            toStationId: last.destination.id,
-            fromStationName: first.origin.name,
-            toStationName: last.destination.name,
-            fromCoords: first.origin.location,
-            toCoords: last.destination.location,
-            departureTime: first.departure,
-            arrivalTime: last.arrival,
-            price: j.price?.amount,
-            operator: operators.join(' → ') || 'BVG',
-            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'U-Bahn/S-Bahn'),
-            platform: first.departurePlatform,
-            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
-            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
-            legs: legs.length,
-            stops: buildStopsFromLegs(legs),
-        });
-    });
-}
-
-// ─── API Rejseplanen (Dinamarca — HAFAS) ────────────────────────────────────
-
-async function fetchStationsFromRejse(query: string): Promise<Station[]> {
-    const res = await fetchWithTimeout(`/api-rejse/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
-    if (!res.ok) throw new Error(`Rejseplanen API ${res.status}`);
-    const data: any[] = await res.json();
-    return data
-        .filter((loc: any) => loc.type === 'station')
-        .map((loc: any) => {
-            const station: Station = {
-                id: String(loc.id),
-                name: loc.name,
-                city: loc.address?.city ?? loc.name.split(',')[0],
-                country: 'Dinamarca',
-                coordinates: loc.location
-                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
-                    : undefined,
-            };
-            cacheStationName(station.id, station.name);
-            return station;
-        });
-}
-
-async function fetchRoutesFromRejse(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    const now = new Date();
-    const isToday = !date || date === now.toISOString().split('T')[0];
-    let time = '08:00:00';
-    if (isToday) {
-        time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
-    }
-    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
-    const url = `/api-rejse/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=6&stopovers=true&departure=${encodeURIComponent(searchDate + 'T' + time)}`;
-
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`Rejseplanen API ${res.status}`);
-    const data = await res.json();
-    if (!data?.journeys?.length) return [];
-
-    return data.journeys.map((j: any) => {
-        const legs = j.legs.filter((l: any) => l.origin && l.destination);
-        const first = legs[0];
-        const last = legs[legs.length - 1];
-        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
-        const stableId = j.refreshToken || `rejse-${first.origin.id}-${last.destination.id}-${first.departure}`;
-        cacheStationName(first.origin.id, first.origin.name);
-        cacheStationName(last.destination.id, last.destination.name);
-
-        return buildRoute({
-            id: stableId,
-            fromStationId: first.origin.id,
-            toStationId: last.destination.id,
-            fromStationName: first.origin.name,
-            toStationName: last.destination.name,
-            fromCoords: first.origin.location,
-            toCoords: last.destination.location,
-            departureTime: first.departure,
-            arrivalTime: last.arrival,
-            price: j.price?.amount,
-            operator: operators.join(' → ') || 'DSB/Rejseplanen',
-            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Train'),
-            platform: first.departurePlatform,
-            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
-            lineName: legs.map((l: any) => l.line?.name).filter(Boolean).join(' → '),
-            legs: legs.length,
-            stops: buildStopsFromLegs(legs),
-        });
-    });
-}
-
 // ─── API Entur (Noruega — api.entur.io) ─────────────────────────────────────
 // 100% gratuita, sin registro. Solo requiere header ET-Client-Name.
 // Geocoder (REST) para estaciones + Journey Planner (GraphQL) para rutas.
@@ -1221,131 +775,6 @@ async function fetchRoutesFromEntur(fromId: string, toId: string, date?: string)
     }).filter(Boolean) as Route[];
 }
 
-// ─── API Digitransit (Finlandia) ────────────────────────────────────────────
-// Registro gratuito: https://digitransit.fi/en/developers/
-// Cubre todo el transporte público de Finlandia (VR trenes, HSL Helsinki, etc.)
-
-async function fetchStationsFromDigitransit(query: string): Promise<Station[]> {
-    if (!DIGITRANSIT_API_KEY) return [];
-    const res = await fetch(
-        `https://api.digitransit.fi/geocoding/v1/search?text=${encodeURIComponent(query)}&size=8&layers=stop,station&lang=en`,
-        {
-            headers: { 'digitransit-subscription-key': DIGITRANSIT_API_KEY },
-            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        }
-    );
-    if (!res.ok) throw new Error(`Digitransit API ${res.status}`);
-    const data = await res.json();
-
-    return (data.features ?? []).map((f: any) => {
-        const props = f.properties;
-        const id = `digitransit-${props.id || props.gid}`;
-        const station: Station = {
-            id,
-            name: props.name,
-            city: props.locality || props.region || 'Finlandia',
-            country: 'Finlandia',
-            coordinates: f.geometry?.coordinates
-                ? { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }
-                : undefined,
-        };
-        cacheStationName(id, station.name);
-        return station;
-    });
-}
-
-async function fetchRoutesFromDigitransit(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    if (!DIGITRANSIT_API_KEY) return [];
-
-    // Necesitamos coordenadas para Digitransit OTP
-    const fromCoords = stationCoordsCache.get(fromId);
-    const toCoords = stationCoordsCache.get(toId);
-    if (!fromCoords || !toCoords) return []; // Sin coordenadas no podemos buscar
-
-    const now = new Date();
-    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
-
-    const query = `{
-        plan(
-            from: { lat: ${fromCoords.lat}, lon: ${fromCoords.lng} }
-            to: { lat: ${toCoords.lat}, lon: ${toCoords.lng} }
-            date: "${searchDate}"
-            time: "08:00:00"
-            numItineraries: 6
-            transportModes: [{ mode: RAIL }, { mode: BUS }, { mode: TRAM }]
-        ) {
-            itineraries {
-                startTime
-                endTime
-                duration
-                legs {
-                    mode
-                    startTime
-                    endTime
-                    from { name stop { gtfsId } }
-                    to { name stop { gtfsId } }
-                    route { shortName longName agency { name } }
-                    intermediateStops { name gtfsId lat lon }
-                }
-            }
-        }
-    }`;
-
-    const res = await fetch('https://api.digitransit.fi/routing/v2/finland/gtfs/v1', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'digitransit-subscription-key': DIGITRANSIT_API_KEY,
-        },
-        body: JSON.stringify({ query }),
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new Error(`Digitransit API ${res.status}`);
-    const data = await res.json();
-    const itineraries = data?.data?.plan?.itineraries ?? [];
-
-    return itineraries.map((it: any) => {
-        const legs = it.legs ?? [];
-        const first = legs[0];
-        const last = legs[legs.length - 1];
-        if (!first || !last) return null;
-
-        const operators = [...new Set<string>(legs.map((l: any) => l.route?.agency?.name).filter(Boolean))];
-        const lineNames = legs.map((l: any) => l.route?.shortName).filter(Boolean);
-        const startTime = new Date(it.startTime).toISOString();
-        const endTime = new Date(it.endTime).toISOString();
-        const stableId = `digi-${fromId}-${toId}-${it.startTime}`;
-
-        const stops = legs.flatMap((l: any) =>
-            (l.intermediateStops ?? []).map((s: any) => ({
-                stationId: s.gtfsId ?? '',
-                stationName: s.name ?? '',
-                coordinates: s.lat && s.lon ? { lat: s.lat, lng: s.lon } : undefined,
-            }))
-        );
-
-        return buildRoute({
-            id: stableId,
-            fromStationId: fromId,
-            toStationId: toId,
-            fromStationName: first.from?.name ?? fromId,
-            toStationName: last.to?.name ?? toId,
-            fromCoords: fromCoords ? { latitude: fromCoords.lat, longitude: fromCoords.lng } : null,
-            toCoords: toCoords ? { latitude: toCoords.lat, longitude: toCoords.lng } : null,
-            departureTime: startTime,
-            arrivalTime: endTime,
-            price: undefined,
-            operator: operators.join(' → ') || 'VR/HSL',
-            type: legs.length > 1 ? `${legs.length} tramos` : (first.mode || 'RAIL'),
-            platform: undefined,
-            delay: 0,
-            lineName: lineNames.join(' → '),
-            legs: legs.length,
-            stops,
-        });
-    }).filter(Boolean) as Route[];
-}
-
 // ─── API Renfe (España — data.renfe.com CKAN open data) ─────────────────────
 // Portal de datos abiertos de Renfe. Estaciones por región.
 // No tiene journey planner API — las rutas se buscan vía DB HAFAS (conexiones internacionales)
@@ -1353,7 +782,8 @@ async function fetchRoutesFromDigitransit(fromId: string, toId: string, date?: s
 
 // Resource IDs de las principales regiones de cercanías
 const RENFE_STATION_RESOURCES = [
-    'a2368cff-1562-4dde-8466-9635ea3a572a', // Málaga
+    '783e0626-6fa8-4ac7-a880-fa53144654ff', // Listado completo (1250 estaciones)
+    'b22cd560-3a2b-45dd-a25d-2406941f6fcc', // AVE / Larga Distancia / Media Distancia (646 estaciones)
 ];
 
 async function fetchStationsFromRenfe(query: string): Promise<Station[]> {
@@ -1366,7 +796,7 @@ async function fetchStationsFromRenfe(query: string): Promise<Station[]> {
         if (!data?.success || !data?.result?.records) return [];
 
         return data.result.records.map((r: any) => {
-            const code = String(r['CÓDIGO'] || r._id);
+            const code = String(r['CÓDIGO'] || r['CODIGO'] || r._id);
             const id = `renfe-${code}`;
             const lat = parseFloat(r['LATITUD']);
             const lng = parseFloat(r['LONGITUD']);
@@ -1496,19 +926,12 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
     const safe = sanitizeQuery(query);
     if (safe.length < 2) return FALLBACK_STATIONS;
 
-    // Lanzar las APIs en paralelo; usar las que respondan
+    // Lanzar las 6 APIs verificadas en paralelo; usar las que respondan
     const apiResults = await Promise.allSettled([
         fetchStationsFromDB(safe),
         fetchStationsFromSBB(safe),
         fetchStationsFromIrail(safe),
-        fetchStationsFromOEBB(safe),
-        fetchStationsFromPKP(safe),
-        fetchStationsFromFlixbus(safe),
-        fetchStationsFromVBB(safe),
-        fetchStationsFromBVG(safe),
-        fetchStationsFromRejse(safe),
         fetchStationsFromEntur(safe),
-        fetchStationsFromDigitransit(safe),
         fetchStationsFromRenfe(safe),
         fetchStationsFromSNCF(safe),
     ]);
@@ -1550,27 +973,13 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useDB      = true; // siempre intentamos DB (cubre toda Europa)
     const useSBB     = isSwissStation(fromId) || isSwissStation(toId);
     const useIrail   = isBelgianStation(fromId) || isBelgianStation(toId);
-    const useOEBB    = isAustrianStation(fromId) || isAustrianStation(toId);
-    const usePKP     = isPolishStation(fromId) || isPolishStation(toId);
-    const useFlixbus = isFlixbusStation(fromId) || isFlixbusStation(toId);
-    const useVBB     = isBerlinStation(fromId) || isBerlinStation(toId);
-    const useBVG     = isBerlinStation(fromId) || isBerlinStation(toId);
-    const useRejse       = isDanishStation(fromId) || isDanishStation(toId);
-    const useEntur       = isNorwegianStation(fromId) || isNorwegianStation(toId);
-    const useDigitransit = isFinnishStation(fromId) || isFinnishStation(toId);
+    const useEntur   = isNorwegianStation(fromId) || isNorwegianStation(toId);
 
     const promises: Promise<Route[]>[] = [];
-    if (useDB)           promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
-    if (useSBB)          promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
-    if (useIrail)        promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
-    if (useOEBB)         promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
-    if (usePKP)          promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
-    if (useFlixbus)      promises.push(fetchRoutesFromFlixbus(fromId, toId, validDate).catch(() => []));
-    if (useVBB)          promises.push(fetchRoutesFromVBB(fromId, toId, validDate).catch(() => []));
-    if (useBVG)          promises.push(fetchRoutesFromBVG(fromId, toId, validDate).catch(() => []));
-    if (useRejse)        promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
-    if (useEntur)        promises.push(fetchRoutesFromEntur(fromId, toId, validDate).catch(() => []));
-    if (useDigitransit)  promises.push(fetchRoutesFromDigitransit(fromId, toId, validDate).catch(() => []));
+    if (useDB)     promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
+    if (useSBB)    promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
+    if (useIrail)  promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
+    if (useEntur)  promises.push(fetchRoutesFromEntur(fromId, toId, validDate).catch(() => []));
 
 
     const results = await Promise.all(promises);

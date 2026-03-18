@@ -35,7 +35,7 @@ const PopularRoutesIndex = lazy(() => import('./pages/RouteLanding').then(m => (
 
 const PageLoader = () => (
   <div className="flex-1 flex items-center justify-center min-h-[50vh]">
-    <Loader2 className="animate-spin text-indigo-400" size={32} />
+    <Loader2 className="animate-spin text-[#d4a853]" size={32} />
   </div>
 );
 
@@ -187,95 +187,98 @@ const Dashboard = () => {
       animate={{ opacity: 1 }}
       className="flex-1 p-8 md:p-10 overflow-y-auto"
     >
-      <header className="relative mb-12 p-10 md:p-20 rounded-[40px] overflow-hidden min-h-[400px] flex items-center border border-white/10 group">
+      <header className="relative mb-12 p-10 md:p-20 rounded-3xl overflow-hidden min-h-[420px] flex items-center border border-[var(--gold)]/[0.08] group">
         {/* Immersive Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_rgba(99,102,241,0.15)_0%,_transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_rgba(192,132,252,0.15)_0%,_transparent_50%)]" />
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1474487022159-5a4ada5942e1?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center mix-blend-overlay opacity-20 grayscale transition-all duration-1000 group-hover:scale-110 group-hover:grayscale-0" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-dark)] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,_rgba(212,168,83,0.08)_0%,_transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_90%,_rgba(14,20,37,0.9)_0%,_transparent_60%)]" />
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1474487022159-5a4ada5942e1?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center mix-blend-overlay opacity-15 grayscale transition-all duration-1000 group-hover:scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-dark)] via-[var(--bg-dark)]/60 to-transparent" />
+          {/* Top gold accent line */}
+          <div className="absolute top-0 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-[#d4a853]/30 to-transparent" />
         </div>
 
-        {/* Animated Particles/Blobs */}
-        <motion.div 
-          animate={{ x: [0, 50, 0], y: [0, 30, 0], scale: [1, 1.1, 1] }}
+        {/* Ambient glow */}
+        <motion.div
+          animate={{ x: [0, 40, 0], y: [0, 20, 0], opacity: [0.06, 0.1, 0.06] }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/4 -left-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] z-0" 
+          className="absolute top-1/4 -left-20 w-96 h-96 bg-[#d4a853] rounded-full blur-[140px] z-0"
         />
-        <motion.div 
-          animate={{ x: [0, -40, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
+        <motion.div
+          animate={{ x: [0, -30, 0], y: [0, -40, 0], opacity: [0.04, 0.08, 0.04] }}
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[150px] z-0" 
+          className="absolute bottom-1/4 -right-20 w-[500px] h-[500px] bg-[#d4a853] rounded-full blur-[160px] z-0"
         />
-        
+
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center w-full gap-12">
           <div className="text-center md:text-left max-w-2xl">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-6"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#d4a853]/[0.08] border border-[#d4a853]/20 text-[10px] font-bold text-[#d4a853] uppercase tracking-[0.2em] mb-6"
             >
-              <Zap size={10} fill="currentColor" /> v2.4 (HAFAS ENGINE)
+              <Zap size={10} fill="currentColor" /> v2.4 — HAFAS ENGINE
             </motion.div>
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-5xl md:text-8xl font-black tracking-tight leading-[0.85] mb-6 text-white"
+              className="font-display text-5xl md:text-[5.5rem] font-bold tracking-tight leading-[0.9] mb-6"
+              style={{ color: 'var(--text-main)' }}
             >
-              Europa a tu <br /> 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 animate-gradient-x drop-shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+              Europa a tu <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d4a853] via-[#f0c674] to-[#d4a853] animate-gradient-x">
                 Manera
               </span>
             </motion.h1>
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-gray-400 text-base md:text-xl max-w-lg leading-relaxed mx-auto md:mx-0 font-medium"
+              className="text-[var(--text-muted)] text-base md:text-lg max-w-lg leading-relaxed mx-auto md:mx-0"
             >
               La plataforma definitiva para el viajero moderno. Inteligencia, ahorro y confort ferroviario en una sola app.
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex items-center gap-4 mt-8 justify-center md:justify-start"
+              className="flex items-center gap-4 mt-10 justify-center md:justify-start"
             >
-              <button onClick={() => navigate('/interrail')} className="btn-primary px-8 py-4 text-base">
+              <button onClick={() => navigate('/interrail')} className="btn-primary px-8 py-4 text-base font-bold">
                 Empezar Aventura
               </button>
-              <button onClick={() => navigate('/map')} className="px-8 py-4 text-sm font-bold text-gray-400 hover:text-white transition-colors border border-white/5 rounded-2xl hover:bg-white/5">
+              <button onClick={() => navigate('/map')} className="btn-secondary px-8 py-4 text-sm">
                 Ver Mapa 3D
               </button>
             </motion.div>
           </div>
-          
+
           {/* Visual Highlight - Premium Information */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
             className="hidden lg:block relative"
           >
-            <div className="flex items-center gap-6">
-              <div className="glass-card p-6 flex items-center gap-4 border-indigo-500/20">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                  <Heart size={24} />
+            <div className="flex flex-col gap-4">
+              <div className="glass-card p-5 flex items-center gap-4 border-[#d4a853]/10">
+                <div className="w-11 h-11 rounded-xl bg-[#d4a853]/[0.08] flex items-center justify-center text-[#d4a853]">
+                  <Heart size={20} />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Sostenibilidad</div>
-                  <div className="text-sm font-bold text-white">Viaja con 90% menos CO2</div>
+                  <div className="text-[10px] font-bold text-[#d4a853] uppercase tracking-widest">Sostenibilidad</div>
+                  <div className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>90% menos CO2</div>
                 </div>
               </div>
-              <div className="glass-card p-6 flex items-center gap-4 border-purple-500/20">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-                  <Zap size={24} />
+              <div className="glass-card p-5 flex items-center gap-4 border-[#d4a853]/10">
+                <div className="w-11 h-11 rounded-xl bg-[#d4a853]/[0.08] flex items-center justify-center text-[#d4a853]">
+                  <Zap size={20} />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Inteligencia</div>
-                  <div className="text-sm font-bold text-white">Precios Dinámicos HAFAS</div>
+                  <div className="text-[10px] font-bold text-[#d4a853] uppercase tracking-widest">Inteligencia</div>
+                  <div className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>Precios HAFAS en vivo</div>
                 </div>
               </div>
             </div>
@@ -301,10 +304,10 @@ const Dashboard = () => {
         <section className="mb-12 mt-12">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">Destinos en Tendencia</h2>
-              <p className="text-sm text-gray-500 mt-1 font-medium">Las rutas más buscadas esta semana en Europa.</p>
+              <h2 className="font-display text-2xl font-bold tracking-tight" style={{ color: 'var(--text-main)' }}>Destinos en Tendencia</h2>
+              <p className="text-sm text-[var(--text-muted)] mt-1">Las rutas más buscadas esta semana en Europa.</p>
             </div>
-            <button onClick={() => navigate('/map')} className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-400 hover:text-white transition-all">
+            <button onClick={() => navigate('/map')} className="px-4 py-2 rounded-xl bg-[#d4a853]/[0.06] border border-[#d4a853]/10 text-xs font-semibold text-[#d4a853] hover:bg-[#d4a853]/10 transition-all">
               Ver todos
             </button>
           </div>
@@ -352,14 +355,14 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <TrendingDown size={18} className="text-indigo-400" />
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <TrendingDown size={18} className="text-[#d4a853]" />
               <span>Resultados Disponibles</span>
               {sortedResults.length > 0 && (
-                <span className="text-xs font-semibold text-[var(--text-muted)] bg-white/5 px-2 py-0.5 rounded-full border border-white/5">{sortedResults.length}</span>
+                <span className="text-xs font-semibold text-[var(--text-muted)] bg-[#d4a853]/[0.06] px-2.5 py-0.5 rounded-full border border-[#d4a853]/10">{sortedResults.length}</span>
               )}
             </h2>
-            <div className="flex bg-white/3 p-1 rounded-xl border border-white/5 gap-0.5">
+            <div className="flex bg-white/3 p-1 rounded-xl border border-[#d4a853]/[0.06] gap-0.5">
               <FilterButton label="Más Barato" active={sortBy === 'price'} onClick={() => setSortBy('price')} />
               <FilterButton label="Más Rápido" active={sortBy === 'duration'} onClick={() => setSortBy('duration')} />
               <FilterButton label="Más Temprano" active={sortBy === 'time'} onClick={() => setSortBy('time')} />
@@ -386,22 +389,22 @@ const Dashboard = () => {
                 return <RouteCard key={`${route.id}-${idx}`} route={route} fromStation={fromS} toStation={toS} />;
               })
             ) : (
-              <div className="glass-card p-16 text-center shadow-2xl border-white/5 relative overflow-hidden group">
+              <div className="glass-card p-16 text-center shadow-2xl border-[#d4a853]/[0.06] relative overflow-hidden group">
                 {maintenanceOp ? (
                   <>
-                    <div className="absolute inset-0 bg-indigo-500/5 transition-colors group-hover:bg-indigo-500/10" />
+                    <div className="absolute inset-0 bg-[#d4a853]/[0.02] transition-colors group-hover:bg-[#d4a853]/[0.04]" />
                     <div className="relative z-10">
-                      <div className="w-20 h-20 rounded-3xl bg-indigo-500/10 flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner">
+                      <div className="w-20 h-20 rounded-2xl bg-[#d4a853]/[0.08] flex items-center justify-center text-4xl mx-auto mb-6">
                         ⚠️
                       </div>
-                      <h3 className="text-2xl font-black text-white mb-3">En Mantenimiento</h3>
-                      <p className="text-gray-400 max-w-sm mx-auto mb-8 font-medium leading-relaxed">
-                        Actualmente no disponemos de conexión en tiempo real para trayectos internos en 
-                        <span className="text-indigo-400 font-bold"> {maintenanceOp.name}</span>.
+                      <h3 className="font-display text-2xl font-bold mb-3" style={{ color: 'var(--text-main)' }}>En Mantenimiento</h3>
+                      <p className="text-[var(--text-muted)] max-w-sm mx-auto mb-8 leading-relaxed">
+                        Actualmente no disponemos de conexión en tiempo real para trayectos internos en
+                        <span className="text-[#d4a853] font-semibold"> {maintenanceOp.name}</span>.
                       </p>
-                      <button 
+                      <button
                         onClick={() => window.open(maintenanceOp.url, '_blank')}
-                        className="btn-primary px-8 py-4 text-sm font-black shadow-lg shadow-indigo-500/20"
+                        className="btn-primary px-8 py-4 text-sm font-bold"
                       >
                         Consultar en Web Oficial ({maintenanceOp.name})
                       </button>
@@ -422,17 +425,17 @@ const Dashboard = () => {
         <aside className="flex flex-col gap-6">
           {/* Landing features when not searching */}
           {!calendarFrom && (
-            <div className="glass-card p-6 border-indigo-500/10">
-              <div className="flex items-center gap-2 text-indigo-400 mb-3">
+            <div className="glass-card p-6 border-[#d4a853]/10">
+              <div className="flex items-center gap-2 text-[#d4a853] mb-3">
                 <Ticket size={16} fill="currentColor" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Ofertas Flash</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">Ofertas Flash</span>
               </div>
-              <h3 className="text-sm font-bold text-white mb-2">Madrid - Valencia</h3>
-              <div className="text-2xl font-black text-white mb-1">19,90€</div>
-              <p className="text-[10px] text-gray-500 mb-4">Solo hoy, billetes de alta velocidad con 60% dto.</p>
+              <h3 className="font-display text-sm font-semibold mb-2" style={{ color: 'var(--text-main)' }}>Madrid — Valencia</h3>
+              <div className="text-2xl font-bold text-[#d4a853] mb-1">19,90€</div>
+              <p className="text-[10px] text-[var(--text-muted)] mb-4">Solo hoy, billetes de alta velocidad con 60% dto.</p>
               <button
                 onClick={() => handleDestinationClick("Valencia", "España", "7100002")}
-                className="w-full py-2 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-xl transition-all border border-white/5"
+                className="w-full py-2.5 bg-[#d4a853]/[0.06] hover:bg-[#d4a853]/10 text-xs font-semibold rounded-xl transition-all border border-[#d4a853]/10 text-[#d4a853]"
               >
                 Reservar Ahora
               </button>
@@ -440,7 +443,7 @@ const Dashboard = () => {
           )}
 
           <div className="glass-card p-6">
-            <div className="text-xs font-black uppercase tracking-widest text-[var(--text-muted)] mb-5">Tu Plan Interrail</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-5">Tu Plan Interrail</div>
             {interrailStops.length > 0 ? (
               <div className="space-y-0.5">
                 {interrailStops.map((stop, i) => (
@@ -449,8 +452,8 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="text-center py-4">
-                <div className="text-sm text-gray-500 mb-3">Sin ruta planificada</div>
-                <button onClick={() => navigate('/interrail')} className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-400 hover:bg-indigo-500/20 transition-all">
+                <div className="text-sm text-[var(--text-muted)] mb-3">Sin ruta planificada</div>
+                <button onClick={() => navigate('/interrail')} className="px-4 py-2.5 rounded-xl bg-[#d4a853]/[0.08] border border-[#d4a853]/15 text-xs font-semibold text-[#d4a853] hover:bg-[#d4a853]/15 transition-all">
                   Planificar Ruta
                 </button>
               </div>
@@ -579,24 +582,24 @@ export const App = () => {
 };
 
 const DestinationCard = ({ city, country, image, delay, onClick }: { city: string, country: string, image: string, delay: number, onClick: () => void }) => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay }}
-    whileHover={{ y: -8 }}
+    whileHover={{ y: -6 }}
     onClick={onClick}
-    className="group relative h-72 rounded-[32px] overflow-hidden cursor-pointer shadow-xl hover:shadow-indigo-500/10 transition-all border border-white/5"
+    className="group relative h-72 rounded-2xl overflow-hidden cursor-pointer shadow-xl hover:shadow-[#d4a853]/[0.08] transition-all border border-white/5"
   >
-    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-500 z-10" />
+    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/25 transition-all duration-500 z-10" />
     <img src={image} alt={city} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-20" />
-    
+    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-20" />
+
     <div className="absolute bottom-6 left-6 right-6 z-30">
-      <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">{country}</div>
-      <div className="text-2xl font-black text-white tracking-tight">{city}</div>
+      <div className="text-[10px] font-bold text-[#d4a853] uppercase tracking-widest mb-1">{country}</div>
+      <div className="font-display text-2xl font-bold text-white tracking-tight">{city}</div>
       <div className="flex items-center justify-between mt-4">
-        <div className="text-xs font-bold text-indigo-300">Explorar ahora</div>
-        <button className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white scale-0 group-hover:scale-100 transition-all duration-300">
+        <div className="text-xs font-medium text-[#d4a853]/80">Explorar ahora</div>
+        <button className="w-8 h-8 rounded-full bg-[#d4a853]/20 backdrop-blur-md flex items-center justify-center text-white scale-0 group-hover:scale-100 transition-all duration-300">
           <ChevronRight size={18} />
         </button>
       </div>
@@ -627,10 +630,10 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="px-6 pt-7 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
-            <Train size={20} strokeWidth={2.5} />
+          <div className="w-9 h-9 bg-gradient-to-br from-[#d4a853] to-[#c9973f] rounded-xl flex items-center justify-center shadow-lg shadow-[#d4a853]/20 flex-shrink-0">
+            <Train size={20} strokeWidth={2.5} className="text-[#0a0f1c]" />
           </div>
-          <span className="text-lg font-black tracking-tight gradient-text">EasyTrain</span>
+          <span className="text-lg font-bold tracking-tight gradient-text">EasyTrain</span>
         </div>
       </div>
 
@@ -673,19 +676,19 @@ const Sidebar = () => {
         {!useTrainStore.getState().userProfile.isRegistered && (
           <button
             onClick={() => useTrainStore.getState().setAuthModalOpen(true)}
-            className="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-black uppercase tracking-widest rounded-xl border border-indigo-500/20 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 bg-[#d4a853]/[0.08] hover:bg-[#d4a853]/15 text-[#d4a853] text-xs font-bold uppercase tracking-widest rounded-xl border border-[#d4a853]/15 transition-all flex items-center justify-center gap-2"
           >
             <User size={14} />
             Iniciar Sesión
           </button>
         )}
-        <div className="p-4 rounded-2xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
-          <div className="flex items-center gap-2 text-indigo-400 mb-2">
+        <div className="p-4 rounded-2xl" style={{ background: 'rgba(212,168,83,0.05)', border: '1px solid rgba(212,168,83,0.1)' }}>
+          <div className="flex items-center gap-2 text-[#d4a853] mb-2">
             <Zap size={14} fill="currentColor" />
-            <span className="text-[11px] font-black uppercase tracking-widest">Premium</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest">Premium</span>
           </div>
-          <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">Desbloquea ahorros avanzados y sincronización.</p>
-          <Link to="/interrail" className="block w-full py-2 text-[12px] font-bold text-white rounded-xl transition-colors text-center" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+          <p className="text-[11px] text-[var(--text-muted)] mb-3 leading-relaxed">Desbloquea ahorros avanzados y sincronización.</p>
+          <Link to="/interrail" className="block w-full py-2 text-[12px] font-bold text-[#0a0f1c] rounded-xl transition-colors text-center" style={{ background: 'linear-gradient(135deg, #d4a853, #c9973f)' }}>
             Planificar Viaje
           </Link>
         </div>
@@ -705,17 +708,18 @@ interface NavItemProps {
 const NavItem = ({ to, icon, label, active, badge }: NavItemProps) => (
   <Link
     to={to}
-    className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all font-semibold text-sm ${
+    className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all font-medium text-sm ${
       active
-        ? 'bg-indigo-500/15 text-white border border-indigo-500/25'
-        : 'text-[var(--text-muted)] hover:bg-white/5 hover:text-gray-200 border border-transparent'
+        ? 'bg-[#d4a853]/[0.08] border border-[#d4a853]/15'
+        : 'text-[var(--text-muted)] hover:bg-[#d4a853]/[0.04] hover:text-[var(--text-main)] border border-transparent'
     }`}
+    style={active ? { color: 'var(--text-main)' } : undefined}
   >
     <div className="flex items-center gap-3">
-      <span className={active ? 'text-indigo-400' : ''}>{icon}</span>
+      <span className={active ? 'text-[#d4a853]' : ''}>{icon}</span>
       {label}
     </div>
-    {badge && <span className="text-[9px] font-black uppercase tracking-widest bg-indigo-400/15 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-400/20">{badge}</span>}
+    {badge && <span className="text-[9px] font-bold uppercase tracking-widest bg-[#d4a853]/10 text-[#d4a853] px-2 py-0.5 rounded-full border border-[#d4a853]/15">{badge}</span>}
   </Link>
 );
 
@@ -728,12 +732,12 @@ interface TimelineStepProps {
 const TimelineStep = ({ location, date, active }: TimelineStepProps) => (
   <div className="flex gap-4 relative">
     <div className="flex flex-col items-center">
-      <div className={`w-3 h-3 rounded-full ${active ? 'bg-indigo-500 shadow-md shadow-indigo-500/50' : 'bg-gray-700'} relative z-10`} />
+      <div className={`w-3 h-3 rounded-full ${active ? 'bg-[#d4a853] shadow-md shadow-[#d4a853]/40' : 'bg-gray-700'} relative z-10`} />
       <div className="w-0.5 flex-1 bg-gray-700/50 my-1" />
     </div>
     <div className="pb-6">
-      <div className="font-bold text-sm leading-none">{location}</div>
-      <div className="text-xs text-gray-500 mt-1">{date}</div>
+      <div className="font-semibold text-sm leading-none">{location}</div>
+      <div className="text-xs text-[var(--text-muted)] mt-1">{date}</div>
     </div>
   </div>
 );
@@ -741,10 +745,10 @@ const TimelineStep = ({ location, date, active }: TimelineStepProps) => (
 const FilterButton = ({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) => (
   <button
     onClick={onClick}
-    className={`px-3.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${
+    className={`px-3.5 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all ${
       active
-        ? 'bg-indigo-600/80 text-white shadow-md shadow-indigo-500/20 border border-indigo-500/40'
-        : 'text-[var(--text-muted)] hover:text-white hover:bg-white/5 border border-transparent'
+        ? 'bg-[#d4a853]/15 text-[#d4a853] border border-[#d4a853]/25'
+        : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5 border border-transparent'
     }`}
   >
     {label}
@@ -752,21 +756,21 @@ const FilterButton = ({ label, active, onClick }: { label: string, active: boole
 );
 
 const Footer = () => (
-  <footer className="px-8 py-12 border-t border-white/5 bg-black/20">
+  <footer className="px-8 py-14 border-t border-[#d4a853]/[0.06]" style={{ background: 'rgba(0,0,0,0.15)' }}>
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
       <div className="col-span-1 md:col-span-1">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
-            <Train size={16} />
+          <div className="w-8 h-8 bg-gradient-to-br from-[#d4a853] to-[#c9973f] rounded-lg flex items-center justify-center">
+            <Train size={16} className="text-[#0a0f1c]" />
           </div>
-          <span className="text-lg font-black tracking-tight gradient-text">EasyTrain</span>
+          <span className="text-lg font-bold tracking-tight gradient-text">EasyTrain</span>
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed">
           La plataforma definitiva para el viajero moderno en Europa. Inteligencia, ahorro y confort ferroviario en una sola app.
         </p>
       </div>
       <div>
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-white mb-6">Explora</h4>
+        <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6" style={{ color: 'var(--text-main)' }}>Explora</h4>
         <ul className="space-y-3">
           <li><Link to="/" className="footer-link">Dashboard</Link></li>
           <li><Link to="/interrail" className="footer-link">Planificador</Link></li>
@@ -774,7 +778,7 @@ const Footer = () => (
         </ul>
       </div>
       <div>
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-white mb-6">Cuenta</h4>
+        <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6" style={{ color: 'var(--text-main)' }}>Cuenta</h4>
         <ul className="space-y-3">
           <li><Link to="/profile" className="footer-link">Mi Perfil</Link></li>
           <li><Link to="/tickets" className="footer-link">Mis Billetes</Link></li>
@@ -782,19 +786,20 @@ const Footer = () => (
         </ul>
       </div>
       <div>
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-white mb-6">Legal</h4>
-        <ul className="space-y-3 text-slate-500 text-xs">
+        <h4 className="text-[10px] font-bold uppercase tracking-widest mb-6" style={{ color: 'var(--text-main)' }}>Legal</h4>
+        <ul className="space-y-3 text-[var(--text-muted)] text-xs">
           <li>Términos y Condiciones</li>
           <li>Política de Privacidad</li>
           <li>Soporte 24/7</li>
         </ul>
       </div>
     </div>
-    <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+    <div className="gold-line mt-12 mb-8" />
+    <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-[var(--text-muted)] font-semibold uppercase tracking-widest">
       <div>© 2026 EasyTrain Europa S.L.</div>
       <div className="flex gap-6">
         <span>Hecho con ❤️ en Madrid</span>
-        <span className="text-indigo-400">v2.4.0 Codename: Orion</span>
+        <span className="text-[#d4a853]">v2.4.0 Codename: Orion</span>
       </div>
     </div>
   </footer>
@@ -803,7 +808,7 @@ const Footer = () => (
 const BottomNav = () => {
   const location = useLocation();
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-6 z-[2000]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#080c16]/90 backdrop-blur-xl border-t border-[#d4a853]/[0.06] flex items-center justify-around px-6 z-[2000]">
       <MobileNavItem to="/" icon={<LayoutDashboard size={20} />} active={location.pathname === '/'} label="Home" />
       <MobileNavItem to="/interrail" icon={<Calendar size={20} />} active={location.pathname === '/interrail'} label="Plan" />
       {useTrainStore.getState().bookingClicks.length > 0 && (
@@ -816,9 +821,9 @@ const BottomNav = () => {
 };
 
 const MobileNavItem = ({ to, icon, active, label }: { to: string, icon: React.ReactNode, active: boolean, label: string }) => (
-  <Link to={to} className={`flex flex-col items-center gap-1 transition-colors ${active ? 'text-indigo-400' : 'text-gray-500'}`}>
+  <Link to={to} className={`flex flex-col items-center gap-1 transition-colors ${active ? 'text-[#d4a853]' : 'text-gray-500'}`}>
     {icon}
-    <span className="text-[9px] font-black uppercase tracking-widest">{label}</span>
+    <span className="text-[9px] font-bold uppercase tracking-widest">{label}</span>
   </Link>
 );
 

@@ -31,13 +31,13 @@ export const CookieBanner = () => {
           exit={{ opacity: 0, y: 100, scale: 0.95 }}
           className="fixed bottom-6 left-6 right-6 md:left-auto md:right-8 md:w-[400px] z-[10000]"
         >
-          <div className="glass-card p-6 border-indigo-500/20 shadow-2xl overflow-hidden relative">
+          <div className="glass-card p-6 border-[#d4a853]/20 shadow-2xl overflow-hidden relative">
             {/* Background Decoration */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#d4a853]/10 rounded-full blur-3xl pointer-events-none" />
             
             <div className="relative z-10">
               <div className="flex items-start gap-4 mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-[#d4a853]/10 border border-[#d4a853]/20 flex items-center justify-center text-[#d4a853] flex-shrink-0">
                   <Cookie size={24} />
                 </div>
                 <div>
@@ -51,7 +51,7 @@ export const CookieBanner = () => {
               <div className="space-y-3">
                 <button
                   onClick={() => handleConsent(true)}
-                  className="w-full flex items-center justify-between px-5 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-500/20 group"
+                  className="w-full flex items-center justify-between px-5 py-3.5 bg-[#d4a853] hover:bg-[#c9973f] text-[#0a0f1c] rounded-2xl font-bold text-sm transition-all shadow-lg shadow-[#d4a853]/20 group"
                 >
                   <div className="flex items-center gap-3">
                     <ShieldCheck size={18} />
@@ -69,7 +69,7 @@ export const CookieBanner = () => {
                   </button>
                   <a
                     href="/privacy"
-                    className="flex items-center justify-center px-4 py-3 text-gray-500 hover:text-indigo-400 text-[10px] font-black uppercase tracking-widest transition-colors"
+                    className="flex items-center justify-center px-4 py-3 text-gray-500 hover:text-[#d4a853] text-[10px] font-black uppercase tracking-widest transition-colors"
                   >
                     Ver política
                   </a>

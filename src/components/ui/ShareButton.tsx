@@ -14,11 +14,11 @@ export const ShareButton = ({ route }: Props) => {
 
     const dep = route.departureTime ? format(new Date(route.departureTime), "d MMM HH:mm", { locale: es }) : '';
     const price = route.price ? `${route.price.toFixed(2)}€` : '';
-    const text = `🚄 ${route.fromStationName} → ${route.toStationName}\n📅 ${dep}${price ? `\n💰 ${price}` : ''}\n🔗 Busca en EasyTrain: https://easytrain.vercel.app`;
+    const text = `🚄 ${route.fromStationName} → ${route.toStationName}\n📅 ${dep}${price ? `\n💰 ${price}` : ''}\n🔗 Busca en EasyTrain: https://easytrain-lr09viw32-miguelufvs-projects.vercel.app`;
 
     const shareNative = async () => {
         if (navigator.share) {
-            await navigator.share({ title: `Tren ${route.fromStationName} → ${route.toStationName}`, text, url: 'https://easytrain.vercel.app' });
+            await navigator.share({ title: `Tren ${route.fromStationName} → ${route.toStationName}`, text, url: 'https://easytrain-lr09viw32-miguelufvs-projects.vercel.app' });
         } else {
             setOpen(!open);
         }
@@ -30,7 +30,7 @@ export const ShareButton = ({ route }: Props) => {
     };
 
     const shareTelegram = () => {
-        window.open(`https://t.me/share/url?url=${encodeURIComponent('https://easytrain.vercel.app')}&text=${encodeURIComponent(text)}`, '_blank');
+        window.open(`https://t.me/share/url?url=${encodeURIComponent('https://easytrain-lr09viw32-miguelufvs-projects.vercel.app')}&text=${encodeURIComponent(text)}`, '_blank');
         setOpen(false);
     };
 

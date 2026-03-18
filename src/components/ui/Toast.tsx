@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, ShieldAlert, X } from 'lucide-react';
 import { create } from 'zustand';
 
 interface Toast {
     id: string;
     message: string;
-    type: 'success' | 'error' | 'info';
+    type: 'success' | 'error' | 'info' | 'warning';
 }
 
 interface ToastStore {
@@ -19,8 +19,8 @@ export const useToastStore = create<ToastStore>((set) => ({
     addToast: (message, type) => {
         const id = Math.random().toString(36).substring(2, 9);
         set((state) => ({ toasts: [...state.toasts, { id, message, type }] }));
-        // Errores se muestran más tiempo para que el usuario los lea
-        const duration = type === 'error' ? 6000 : 3500;
+        // Errores y avisos se muestran más tiempo para que el usuario los lea
+        const duration = type === 'error' ? 6000 : (type === 'warning' ? 5000 : 3500);
         setTimeout(() => {
             set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
         }, duration);
@@ -45,11 +45,13 @@ export const ToastContainer = () => {
                         <div className={`
                             flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl
                             ${toast.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 
-                              toast.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 
-                              'bg-[#d4a853]/10 border-[#d4a853]/20 text-[#d4a853]'}
+                               toast.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 
+                               toast.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                               'bg-[#d4a853]/10 border-[#d4a853]/20 text-[#d4a853]'}
                         `}>
                             {toast.type === 'success' && <CheckCircle size={18} />}
                             {toast.type === 'error' && <AlertCircle size={18} />}
+                            {toast.type === 'warning' && <ShieldAlert size={18} />}
                             {toast.type === 'info' && <Info size={18} />}
                             
                             <span className="text-sm font-bold">{toast.message}</span>

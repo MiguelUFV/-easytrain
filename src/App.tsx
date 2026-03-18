@@ -8,20 +8,23 @@ import {
 } from 'lucide-react';
 import { useTrainStore } from './store/useTrainStore';
 import { RouteCard } from './components/ui/RouteCard';
-import { fetchRoutes, fetchPopularRoutes, isRegionSupported, getOfficialFallback } from './lib/api';
+import { fetchRoutes, fetchPopularRoutes, isRegionSupported, getOfficialFallback, FALLBACK_STATIONS } from './lib/api';
 import { SearchPanel } from './components/features/SearchPanel';
+import { RateLimitError } from './lib/rateLimit';
 import { SearchHistoryPanel, SearchHistoryPage } from './components/features/SearchHistory';
 import { PriceCalendar } from './components/ui/PriceCalendar';
-import { ToastContainer } from './components/ui/Toast';
+import { RateLimitIndicator } from './components/ui/RateLimitIndicator';
+import { ToastContainer, useToastStore } from './components/ui/Toast';
 import { OnboardingTour } from './components/ui/OnboardingTour';
 import { CookieBanner } from './components/ui/CookieBanner';
 import { AuthModal } from './components/ui/AuthModal';
 import { ThemeToggle } from './components/ui/ThemeToggle';
+import { PWAInstallPrompt } from './components/ui/PWAInstallPrompt';
 import { useTheme } from './lib/theme';
 import { useI18n } from './lib/i18n';
-import type { Station, PassengerCounts } from './types';
-type StationType = Station;
+import type { Station, PassengerCounts, Station as StationType } from './types';
 import { trackPageView, analytics } from './lib/analytics';
+import { SEOHead } from './components/ui/SEOHead';
 
 // Lazy-loaded heavy pages
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
@@ -50,6 +53,7 @@ const AnalyticsTracker = () => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { routes: storeRoutes, setRoutes, setError, error, addSearchHistory, setInterrailRouteMode, interrailStops } = useTrainStore();
+  const { addToast } = useToastStore();
   const [calendarFrom, setCalendarFrom] = useState<StationType | null>(null);
   const [calendarTo, setCalendarTo] = useState<StationType | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -63,9 +67,9 @@ const Dashboard = () => {
   }, [setInterrailRouteMode]);
 
   useEffect(() => {
-    // Only load initial data if store has no routes yet
-    if (storeRoutes.length > 0) return;
+    // Only load initial data ONCE on mount if store is empty
     const loadInitialData = async () => {
+      if (storeRoutes.length > 0) return;
       setIsLoading(true);
       try {
         const fetchedRoutes = await fetchPopularRoutes();
@@ -78,7 +82,8 @@ const Dashboard = () => {
       }
     };
     loadInitialData();
-  }, [storeRoutes.length, setRoutes, setError]);
+  }, []); // Only run once on mount
+
 
   const handleSearch = async (params: {
     from: string;
@@ -128,16 +133,18 @@ const Dashboard = () => {
           timestamp: new Date().toISOString(),
         });
       }
-    } catch {
-      setError('Error al buscar rutas.');
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        addToast(`Demasiadas busquedas. Espera ${err.waitSeconds}s para continuar.`, 'warning');
+      } else {
+        setError('Error al buscar rutas.');
+      }
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleDestinationClick = async (city: string, country: string, stationId: string) => {
-    // Buscar si tenemos el nombre real en nuestras estaciones fallback
-    const { FALLBACK_STATIONS } = await import('./lib/api');
     const fallback = FALLBACK_STATIONS.find(s => s.id === stationId);
     
     const defaultOrigin: StationType = {
@@ -217,7 +224,7 @@ const Dashboard = () => {
               animate={{ opacity: 1, x: 0 }}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#d4a853]/[0.08] border border-[#d4a853]/20 text-[10px] font-bold text-[#d4a853] uppercase tracking-[0.2em] mb-6"
             >
-              <Zap size={10} fill="currentColor" /> v2.4 — HAFAS ENGINE
+              <Zap size={10} fill="currentColor" /> v2.5 (MULTI-API ENGINE)
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
@@ -351,6 +358,8 @@ const Dashboard = () => {
           handleSearch({ from: fromId, fromStation: { id: fromId, name: fromName, city: '', country: '' }, to: toId, toStation: { id: toId, name: toName, city: '', country: '' }, departureDate: date, tripType: 'one-way', passengers: { adults: 1, children: 0, infants: 0 } })
         }
       />
+
+      <RateLimitIndicator />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         <div className="lg:col-span-2 flex flex-col gap-6">
@@ -548,6 +557,7 @@ export const App = () => {
 
   return (
     <Router>
+      <SEOHead />
       <AnalyticsTracker />
       <div className="flex flex-col md:flex-row min-h-screen bg-[var(--bg-dark)] text-white">
         <Sidebar />
@@ -576,6 +586,7 @@ export const App = () => {
         <OnboardingTour />
         <CookieBanner />
         <AuthModal />
+        <PWAInstallPrompt />
       </div>
     </Router>
   );

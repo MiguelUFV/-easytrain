@@ -152,7 +152,7 @@ export const AuthModal = () => {
                             <h2 className="text-xl font-black text-white tracking-tight">EasyTrain</h2>
                         </div>
 
-                        {/* ── PESTAÑAS GRANDES Y CLARAS ── */}
+                        {/* Pestañas */}
                         <div className="flex gap-2 mb-6 bg-white/5 rounded-xl p-1 border border-white/5">
                             <button
                                 type="button"

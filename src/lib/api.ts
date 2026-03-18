@@ -1,5 +1,5 @@
 import type { Station, Route } from '../types';
-import { routeLimiter, stationLimiter } from './rateLimit';
+import { routeLimiter, stationLimiter, RateLimitError } from './rateLimit';
 
 // ─── Fetch con timeout ──────────────────────────────────────────────────────
 const FETCH_TIMEOUT_MS = 10_000;
@@ -112,16 +112,72 @@ const OFFICIAL_OPERATORS: Record<string, { name: string; url: (from: string, to:
         name: 'NS (Países Bajos)', 
         url: (f, t) => `https://www.ns.nl/reisplanner/#/?vertrek=${encodeURIComponent(f)}&aankomst=${encodeURIComponent(t)}` 
     },
-    '70': { 
+    '94': { 
         name: 'CP (Portugal)', 
         url: () => 'https://www.cp.pt/passageiros/en/buy-tickets' 
+    },
+    '70': { 
+        name: 'National Rail (UK)', 
+        url: () => 'https://www.nationalrail.co.uk/' 
+    },
+    '51': {
+        name: 'PKP (Polonia)',
+        url: () => 'https://www.intercity.pl/en/'
+    },
+    '54': {
+        name: 'ČD (Rep. Checa)',
+        url: (f, t) => `https://www.cd.cz/en/spojeni-a-jizdenka/spojeni-tam?from=${encodeURIComponent(f)}&to=${encodeURIComponent(t)}`
+    },
+    '55': {
+        name: 'MÁV (Hungría)',
+        url: () => 'https://jegy.mav.hu/'
+    },
+    '74': {
+        name: 'SJ (Suecia)',
+        url: () => 'https://www.sj.se/en/'
+    },
+    '76': {
+        name: 'Vy (Noruega)',
+        url: () => 'https://www.vy.no/en'
+    },
+    '86': {
+        name: 'DSB (Dinamarca)',
+        url: () => 'https://www.dsb.dk/en/'
+    },
+    '82': {
+        name: 'CFL (Luxemburgo)',
+        url: () => 'https://www.cfl.lu/en-gb'
+    },
+    '10': {
+        name: 'VR (Finlandia)',
+        url: () => 'https://www.vr.fi/en'
+    },
+    '53': {
+        name: 'CFR (Rumanía)',
+        url: () => 'https://www.cfrcalatori.ro/en/'
+    },
+    '52': {
+        name: 'BDZ (Bulgaria)',
+        url: () => 'https://bileti.bdz.bg/en/'
+    },
+    '72': {
+        name: 'Srbija Voz (Serbia)',
+        url: () => 'https://srbvoz.rs/en/'
+    },
+    '60': {
+        name: 'IE (Irlanda)',
+        url: () => 'https://www.irishrail.ie/en-ie/'
     }
 };
 
 /** Determina si una ruta tiene soporte de API de tiempo real */
 export function isRegionSupported(fromId: string, toId: string): boolean {
     // DB HAFAS resuelve rutas para la mayoría de Europa vía su red internacional
-    const supportedPrefixes = ['80', '85', '88', '76', '71', '81', '87', '84', '83', '86', '74', '51', '54', '55'];
+    const supportedPrefixes = [
+        '80', '85', '88', '81', '84', '83', '87', '71', // DE, CH, BE, AT, NL, IT, FR, ES
+        '51', '54', '55', '74', '76', '86', '82', '10', // PL, CZ, HU, SE, NO, DK, LU, FI
+        '53', '52', '72', '73', '60', '70'              // RO, BG, XS, GR, IE, UK
+    ];
     const fromPrefix = fromId.substring(0, 2);
     const toPrefix = toId.substring(0, 2);
 
@@ -179,7 +235,11 @@ const COUNTRY_OPERATORS: Record<string, { name: string; url: string }> = {
 
 /** Determina si un país tiene soporte de API real completo */
 export function isCountrySupported(country: string): boolean {
-    const supported = ['Alemania', 'Suiza', 'Bélgica', 'Noruega', 'España'];
+    const supported = [
+        'Alemania', 'Suiza', 'Austria', 'Bélgica', 'España', 'Francia', 'Italia', 'Países Bajos', 'Portugal',
+        'Polonia', 'Rep. Checa', 'Hungría', 'Suecia', 'Noruega', 'Dinamarca', 'Luxemburgo', 'Finlandia',
+        'Rumanía', 'Bulgaria', 'Serbia', 'Grecia', 'Irlanda', 'Reino Unido'
+    ];
     return supported.includes(country);
 }
 
@@ -221,24 +281,27 @@ const UIC_COUNTRIES: Record<string, string> = {
     '71': 'España',
     '94': 'Portugal',
     '70': 'Reino Unido',
-    '74': 'Suecia',
-    '76': 'Noruega',
-    '86': 'Dinamarca',
-    '73': 'Grecia',
     '51': 'Polonia',
     '54': 'Rep. Checa',
     '55': 'Hungría',
-    '56': 'Eslovaquia',
+    '74': 'Suecia',
+    '76': 'Noruega',
+    '86': 'Dinamarca',
+    '82': 'Luxemburgo',
+    '10': 'Finlandia',
+    '53': 'Rumanía',
+    '52': 'Bulgaria',
     '72': 'Serbia',
+    '73': 'Grecia',
+    '56': 'Eslovaquia',
     '78': 'Croacia',
     '79': 'Eslovenia',
     '44': 'Turquía',
-    '53': 'Rumanía',
-    '52': 'Bulgaria',
-    '10': 'Finlandia',
     '25': 'Lituania',
     '26': 'Letonia',
     '27': 'Estonia',
+    '60': 'Irlanda'
+
 };
 
 function getCountryFromId(id: string): string {
@@ -305,6 +368,38 @@ export const FALLBACK_STATIONS: Station[] = [
     // Hungría
     { id: '5500017', name: 'Budapest Keleti',          city: 'Budapest',  country: 'Hungría',      coordinates: { lat: 47.5006, lng: 19.0840 }, tier: 1 },
 ];
+
+// ─── API SNCF (Francia — Opendatasoft) ────────────────────────────────────────
+
+async function fetchStationsFromSNCF(query: string): Promise<Station[]> {
+    try {
+        const url = `https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/liste-des-gares/records?where=search(libelle%2C%20%22${encodeURIComponent(query)}%22)%20or%20search(commune%2C%20%22${encodeURIComponent(query)}%22)&limit=10`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`SNCF API ${res.status}`);
+        const data = await res.json();
+        
+        return (data.results ?? [])
+            .filter((r: any) => r.voyageurs === 'O') // Solo estaciones de pasajeros
+            .map((r: any) => {
+                const id = String(r.code_uic);
+                const station: Station = {
+                    id,
+                    name: r.libelle,
+                    city: r.commune,
+                    country: 'Francia',
+                    coordinates: r.c_geo 
+                        ? { lat: r.c_geo.lat, lng: r.c_geo.lon } 
+                        : undefined,
+                };
+                cacheStationName(id, station.name);
+                if (station.coordinates) cacheStationCoords(id, { latitude: station.coordinates.lat, longitude: station.coordinates.lng });
+                return station;
+            });
+    } catch (e) {
+        console.error('Error fetching SNCF stations:', e);
+        return [];
+    }
+}
 
 // ─── API DB (Deutsche Bahn) ───────────────────────────────────────────────────
 
@@ -831,13 +926,14 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
     const safe = sanitizeQuery(query);
     if (safe.length < 2) return FALLBACK_STATIONS;
 
-    // Lanzar las 5 APIs verificadas en paralelo; usar las que respondan
+    // Lanzar las 6 APIs verificadas en paralelo; usar las que respondan
     const apiResults = await Promise.allSettled([
         fetchStationsFromDB(safe),
         fetchStationsFromSBB(safe),
         fetchStationsFromIrail(safe),
         fetchStationsFromEntur(safe),
         fetchStationsFromRenfe(safe),
+        fetchStationsFromSNCF(safe),
     ]);
 
     const results: Station[] = [];
@@ -868,8 +964,7 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     if (!fromId || !toId) return [];
 
     if (!routeLimiter.canCall()) {
-        console.warn('Rate limit: demasiadas búsquedas de rutas');
-        return [];
+        throw new RateLimitError('route', routeLimiter.secondsUntilNext());
     }
 
     const validDate = date && isValidDate(date) ? date : undefined;
@@ -886,6 +981,7 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     if (useIrail)  promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
     if (useEntur)  promises.push(fetchRoutesFromEntur(fromId, toId, validDate).catch(() => []));
 
+
     const results = await Promise.all(promises);
     const merged = results.flat();
 
@@ -900,6 +996,32 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
 
     // Ordenar por hora de salida
     unique.sort((a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime());
+
+    // Si no hay resultados reales pero la zona está en nuestra lista de soportes oficiales,
+    // generamos una ruta "sintética" que permita al usuario ir a la web del operador.
+    if (unique.length === 0) {
+        const fallback = getOfficialFallback(fromId, toId);
+        if (fallback) {
+            const now = new Date();
+            const departure = validDate ? `${validDate}T12:00:00` : now.toISOString();
+            const arrival = validDate ? `${validDate}T15:00:00` : new Date(now.getTime() + 3*3600*1000).toISOString();
+            
+            unique.push(buildRoute({
+                id: `synthetic-${fromId}-${toId}`,
+                fromStationId: fromId,
+                toStationId: toId,
+                fromStationName: resolveStationName(fromId),
+                toStationName: resolveStationName(toId),
+                departureTime: departure,
+                arrivalTime: arrival,
+                operator: fallback.name,
+                type: 'Reserva Directa',
+                lineName: 'Enlace Oficial',
+                price: undefined,
+                stops: []
+            }));
+        }
+    }
 
     return unique;
 }

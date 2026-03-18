@@ -3,5 +3,9 @@ Allow: /
 Disallow: /api-db/
 Disallow: /api-ch/
 Disallow: /api-irail/
+Disallow: /api-oebb/
+Disallow: /api-pkp/
+Disallow: /settings
+Disallow: /profile
 
-Sitemap: https://easytrain.vercel.app/sitemap.xml
+Sitemap: https://easytrain-lr09viw32-miguelufvs-projects.vercel.app/sitemap.xml

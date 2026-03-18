@@ -17,13 +17,19 @@ export default defineConfig({
         theme_color: '#0a0a0c',
         background_color: '#0a0a0c',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any',
         scope: '/',
         start_url: '/',
+        id: '/',
         categories: ['travel', 'transportation'],
         lang: 'es',
         dir: 'ltr',
         icons: [
+          {
+            src: 'favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml'
+          },
           {
             src: 'icon-192.png',
             sizes: '192x192',
@@ -48,18 +54,36 @@ export default defineConfig({
             type: 'image/png',
             form_factor: 'wide',
             label: 'EasyTrain - Búsqueda de trenes por Europa'
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'EasyTrain Mobile'
+          }
+        ],
+        shortcuts: [
+          {
+            name: 'Planificador Interrail',
+            short_name: 'Interrail',
+            url: '/interrail',
+            icons: [{ src: 'favicon.svg', sizes: 'any' }]
+          },
+          {
+            name: 'Mapa de Europa',
+            short_name: 'Mapa',
+            url: '/map',
+            icons: [{ src: 'favicon.svg', sizes: 'any' }]
           }
         ]
       },
       workbox: {
-        // Cache de páginas navegadas (SPA)
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api-/],
-        // Runtime caching para APIs externas
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
         runtimeCaching: [
           {
             // Cache de búsquedas de estaciones (respuestas rápidas)
-            urlPattern: /^\/api-(db|ch|irail)\/.*(locations|stations|connections)/,
+            urlPattern: /^\/api-(db|ch|irail)\/.*(locations|stations|connections)|https:\/\/(v6\.db\.transport\.rest|transport\.opendata\.ch|api\.irail\.be|data\.renfe\.com|ressources\.data\.sncf\.com)\/.*/i,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'station-searches',
@@ -71,38 +95,61 @@ export default defineConfig({
             urlPattern: /^\/api-(db|ch|irail)\/.*(journeys|connections)/,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'route-searches',
-              expiration: { maxEntries: 30, maxAgeSeconds: 5 * 60 }, // 5min
-              networkTimeoutSeconds: 8,
+              cacheName: 'train-api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 30, // 30 minutes
+              },
+              networkTimeoutSeconds: 10,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
           {
-            // Cache de imágenes externas
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'images',
-              expiration: { maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }, // 30 días
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
           {
-            // Google Fonts
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
+            urlPattern: /^https:\/\/.*\.tile\.openstreetmap\.org\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'map-tiles-cache',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'google-fonts-stylesheets',
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 },
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
             },
           },
         ],
-      }
+      },
     })
   ],
   server: {
@@ -114,7 +161,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api-db/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
+            console.log('proxy error (DB)', err);
           });
           proxy.on('proxyReq', (proxyReq, _req, _res) => {
             proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
@@ -126,12 +173,25 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api-ch/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error (SBB)', err);
+          });
+        },
       },
       '/api-irail': {
         target: 'https://api.irail.be',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api-irail/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error (iRail)', err);
+          });
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
+            proxyReq.setHeader('User-Agent', 'EasyTrain/2.5 (train-planner)');
+          });
+        },
       },
     },
   },

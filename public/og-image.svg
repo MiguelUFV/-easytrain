@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#080c16"/>
+      <stop offset="0.5" stop-color="#0a0f1c"/>
+      <stop offset="1" stop-color="#080c16"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="300" cy="200" r="350" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d4a853" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#d4a853" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="900" cy="450" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d4a853" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#d4a853" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="transparent"/>
+      <stop offset="0.3" stop-color="#d4a853"/>
+      <stop offset="0.7" stop-color="#f0c674"/>
+      <stop offset="1" stop-color="transparent"/>
+    </linearGradient>
+    <linearGradient id="titleGold" x1="400" y1="0" x2="800" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d4a853"/>
+      <stop offset="0.5" stop-color="#f0c674"/>
+      <stop offset="1" stop-color="#d4a853"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <!-- Top gold line -->
+  <rect y="0" width="1200" height="3" fill="url(#gold)"/>
+
+  <!-- Train icon -->
+  <text x="600" y="175" text-anchor="middle" font-size="56" fill="#d4a853">&#x1F684;</text>
+
+  <!-- Title -->
+  <text x="600" y="275" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="68" fill="url(#titleGold)">EasyTrain</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="335" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="300" font-size="26" fill="#e8e4dc">Compara trenes por toda Europa</text>
+
+  <!-- API pills -->
+  <g>
+      <rect x="277" y="395" width="96" height="34" rx="17" fill="rgba(212,168,83,0.12)" stroke="rgba(212,168,83,0.3)" stroke-width="1"/>
+      <text x="325" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="14" fill="#d4a853">DB</text>
+    </g>
+  <g>
+      <rect x="387" y="395" width="96" height="34" rx="17" fill="rgba(212,168,83,0.12)" stroke="rgba(212,168,83,0.3)" stroke-width="1"/>
+      <text x="435" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="14" fill="#d4a853">SBB</text>
+    </g>
+  <g>
+      <rect x="497" y="395" width="96" height="34" rx="17" fill="rgba(212,168,83,0.12)" stroke="rgba(212,168,83,0.3)" stroke-width="1"/>
+      <text x="545" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="14" fill="#d4a853">SNCF</text>
+    </g>
+  <g>
+      <rect x="607" y="395" width="96" height="34" rx="17" fill="rgba(212,168,83,0.12)" stroke="rgba(212,168,83,0.3)" stroke-width="1"/>
+      <text x="655" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="14" fill="#d4a853">Renfe</text>
+    </g>
+  <g>
+      <rect x="717" y="395" width="96" height="34" rx="17" fill="rgba(212,168,83,0.12)" stroke="rgba(212,168,83,0.3)" stroke-width="1"/>
+      <text x="765" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="14" fill="#d4a853">Entur</text>
+    </g>
+  <g>
+      <rect x="827" y="395" width="96" height="34" rx="17" fill="rgba(212,168,83,0.12)" stroke="rgba(212,168,83,0.3)" stroke-width="1"/>
+      <text x="875" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="14" fill="#d4a853">iRail</text>
+    </g>
+
+  <!-- Tagline -->
+  <text x="600" y="498" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="500" font-size="15" fill="#7a8599">Rutas reales  &#x00B7;  Precios en directo  &#x00B7;  Sin registro</text>
+
+  <!-- Version -->
+  <text x="600" y="570" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="700" font-size="11" fill="rgba(212,168,83,0.5)">V1.0 &#x2014; HAFAS ENGINE</text>
+
+  <!-- Bottom gold line -->
+  <rect y="627" width="1200" height="3" fill="url(#gold)"/>
+</svg>

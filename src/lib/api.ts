@@ -23,7 +23,9 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  *  7. VBB (Berlín/Brandenburg)→ /api-vbb   — Transporte regional Berlín (HAFAS)
  *  8. BVG (Berlín urbano)     → /api-bvg   — Metro/tranvía/bus Berlín (HAFAS)
  *  9. Rejseplanen (Dinamarca) → /api-rejse — Dinamarca completa (HAFAS)
- * 10. SNCF (Francia)          → api.sncf.com — TGV, TER, Intercités (requiere API key gratuita)
+ * 10. Entur (Noruega)          → api.entur.io — Transporte público noruego completo (gratis, sin registro)
+ * 11. Digitransit (Finlandia)  → api.digitransit.fi — VR trenes, HSL Helsinki (gratis con API key)
+ * 12. Renfe (España)           → data.renfe.com — Estaciones españolas (CKAN open data)
  *
  * Fallback: mock data + deep-link a web oficial del operador
  */
@@ -126,7 +128,7 @@ const OFFICIAL_OPERATORS: Record<string, { name: string; url: (from: string, to:
 /** Determina si una ruta tiene soporte de API de tiempo real */
 export function isRegionSupported(fromId: string, toId: string): boolean {
     // DB HAFAS resuelve rutas internacionales a través de su red europea
-    const supportedPrefixes = ['80', '85', '88', '81', '87', '84', '83', '86', '74', '76', '51']; // DE, CH, BE, AT, FR, NL, IT, DK, SE, NO, PL
+    const supportedPrefixes = ['80', '85', '88', '81', '87', '84', '83', '86', '74', '76', '51', '71']; // DE, CH, BE, AT, FR, NL, IT, DK, SE, NO, PL, ES
     const fromPrefix = fromId.substring(0, 2);
     const toPrefix = toId.substring(0, 2);
 
@@ -184,7 +186,7 @@ const COUNTRY_OPERATORS: Record<string, { name: string; url: string }> = {
 
 /** Determina si un país tiene soporte de API real completo */
 export function isCountrySupported(country: string): boolean {
-    const supported = ['Alemania', 'Suiza', 'Austria', 'Bélgica', 'Polonia', 'Dinamarca', 'Francia'];
+    const supported = ['Alemania', 'Suiza', 'Austria', 'Bélgica', 'Polonia', 'Dinamarca', 'Noruega', 'Finlandia', 'España'];
     return supported.includes(country);
 }
 
@@ -226,11 +228,17 @@ const isDanishStation = (id: string) => id.startsWith('86') || id.startsWith('86
 /** Berlin VBB/BVG station IDs — 900 prefix is VBB/BVG */
 const isBerlinStation = (id: string) => id.startsWith('900');
 
-/** French station IDs start with 87 (UIC prefix) or sncf- */
-const isFrenchStation = (id: string) => id.startsWith('87') || id.startsWith('sncf-');
+/** Norwegian station IDs — Entur uses NSR: prefix */
+const isNorwegianStation = (id: string) => id.startsWith('NSR:') || id.startsWith('entur-');
 
-/** SNCF API key — gratis en https://www.digital.sncf.com/startup/api */
-const SNCF_API_KEY = import.meta.env.VITE_SNCF_API_KEY || '';
+/** Finnish station IDs — Digitransit uses HSL/Finland-specific IDs */
+const isFinnishStation = (id: string) => id.startsWith('digitransit-');
+
+/** Spanish station IDs — Renfe CKAN or UIC 71 prefix */
+const isSpanishStation = (id: string) => id.startsWith('renfe-') || id.startsWith('71');
+
+/** Digitransit API key (Finland) — gratis en https://digitransit.fi/en/developers/ */
+const DIGITRANSIT_API_KEY = import.meta.env.VITE_DIGITRANSIT_API_KEY || '';
 
 /** UIC Country Prefixes */
 const UIC_COUNTRIES: Record<string, string> = {
@@ -995,133 +1003,298 @@ async function fetchRoutesFromRejse(fromId: string, toId: string, date?: string)
     });
 }
 
-// ─── API SNCF (Francia — api.sncf.com / Navitia) ───────────────────────────
-// Registro gratuito: https://www.digital.sncf.com/startup/api
-// Devuelve TGV, TER, Intercités, Ouigo y conexiones internacionales desde Francia
+// ─── API Entur (Noruega — api.entur.io) ─────────────────────────────────────
+// 100% gratuita, sin registro. Solo requiere header ET-Client-Name.
+// Geocoder (REST) para estaciones + Journey Planner (GraphQL) para rutas.
 
-function sncfHeaders(): HeadersInit {
-    return {
-        'Authorization': 'Basic ' + btoa(SNCF_API_KEY + ':'),
-        'Accept': 'application/json',
-    };
+const ENTUR_HEADERS: HeadersInit = {
+    'ET-Client-Name': 'EasyTrain-web',
+    'Content-Type': 'application/json',
+};
+
+async function fetchStationsFromEntur(query: string): Promise<Station[]> {
+    const res = await fetch(
+        `https://api.entur.io/geocoder/v1/autocomplete?text=${encodeURIComponent(query)}&lang=en&size=8&layers=venue&categories=railStation,metroStation,busStation,tramStation`,
+        { headers: ENTUR_HEADERS, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+    );
+    if (!res.ok) throw new Error(`Entur API ${res.status}`);
+    const data = await res.json();
+
+    return (data.features ?? []).map((f: any) => {
+        const props = f.properties;
+        const id = `entur-${props.id}`;
+        const station: Station = {
+            id,
+            name: props.name,
+            city: props.locality || props.county || 'Noruega',
+            country: 'Noruega',
+            coordinates: f.geometry?.coordinates
+                ? { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }
+                : undefined,
+        };
+        cacheStationName(id, station.name);
+        return station;
+    });
 }
 
-async function fetchStationsFromSNCF(query: string): Promise<Station[]> {
-    if (!SNCF_API_KEY) return [];
-    const res = await fetchWithTimeout(
-        `https://api.sncf.com/v1/coverage/sncf/places?q=${encodeURIComponent(query)}&type[]=stop_area&count=8`
-    );
-    // Need to re-fetch with auth since fetchWithTimeout doesn't support headers
-    const authRes = await fetch(
-        `https://api.sncf.com/v1/coverage/sncf/places?q=${encodeURIComponent(query)}&type[]=stop_area&count=8`,
-        { headers: sncfHeaders(), signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
-    );
-    if (!authRes.ok) throw new Error(`SNCF API ${authRes.status}`);
-    const data = await authRes.json();
-
-    return (data.places ?? [])
-        .filter((p: any) => p.embedded_type === 'stop_area')
-        .map((p: any) => {
-            const sa = p.stop_area;
-            const id = `sncf-${sa.id}`;
-            const station: Station = {
-                id,
-                name: sa.name,
-                city: sa.name.split(' (')[0],
-                country: 'Francia',
-                coordinates: sa.coord
-                    ? { lat: parseFloat(sa.coord.lat), lng: parseFloat(sa.coord.lon) }
-                    : undefined,
-            };
-            cacheStationName(id, station.name);
-            return station;
-        });
-}
-
-async function fetchRoutesFromSNCF(fromId: string, toId: string, date?: string): Promise<Route[]> {
-    if (!SNCF_API_KEY) return [];
-
-    // Convertir IDs al formato SNCF
-    const sncfFrom = fromId.startsWith('sncf-') ? fromId.replace('sncf-', '') : `stop_area:SNCF:${fromId}`;
-    const sncfTo = toId.startsWith('sncf-') ? toId.replace('sncf-', '') : `stop_area:SNCF:${toId}`;
+async function fetchRoutesFromEntur(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const cleanFrom = fromId.replace('entur-', '');
+    const cleanTo = toId.replace('entur-', '');
 
     const now = new Date();
-    let datetime = now.toISOString().replace(/[-:]/g, '').split('.')[0];
+    let dateTime = now.toISOString();
     if (date && isValidDate(date)) {
-        datetime = date.replace(/-/g, '') + 'T080000';
+        dateTime = `${date}T08:00:00+01:00`;
     }
 
-    const url = `https://api.sncf.com/v1/coverage/sncf/journeys?from=${encodeURIComponent(sncfFrom)}&to=${encodeURIComponent(sncfTo)}&datetime=${datetime}&count=8`;
+    const query = `{
+        trip(
+            from: { place: "${cleanFrom}" }
+            to: { place: "${cleanTo}" }
+            dateTime: "${dateTime}"
+            numTripPatterns: 6
+            modes: { transportModes: [{ transportMode: rail }, { transportMode: metro }, { transportMode: bus }] }
+        ) {
+            tripPatterns {
+                duration
+                startTime
+                endTime
+                legs {
+                    mode
+                    fromPlace { name quay { id stopPlace { id } } }
+                    toPlace { name quay { id stopPlace { id } } }
+                    expectedStartTime
+                    expectedEndTime
+                    line { publicCode name authority { name } }
+                    intermediateEstimatedCalls {
+                        quay { name id stopPlace { id } }
+                        expectedArrivalTime
+                        expectedDepartureTime
+                    }
+                }
+            }
+        }
+    }`;
 
-    const res = await fetch(url, {
-        headers: sncfHeaders(),
+    const res = await fetch('https://api.entur.io/journey-planner/v3/graphql', {
+        method: 'POST',
+        headers: ENTUR_HEADERS,
+        body: JSON.stringify({ query }),
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-    if (!res.ok) throw new Error(`SNCF API ${res.status}`);
+    if (!res.ok) throw new Error(`Entur API ${res.status}`);
     const data = await res.json();
-    if (!data?.journeys?.length) return [];
+    const patterns = data?.data?.trip?.tripPatterns ?? [];
 
-    return data.journeys
-        .filter((j: any) => j.type !== 'non_pt_walk') // Excluir caminar
-        .map((j: any) => {
-            const sections = (j.sections ?? []).filter((s: any) => s.type === 'public_transport');
-            if (sections.length === 0) return null;
+    return patterns.map((tp: any) => {
+        const legs = tp.legs ?? [];
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        if (!first || !last) return null;
 
-            const first = sections[0];
-            const last = sections[sections.length - 1];
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.authority?.name || l.line?.name).filter(Boolean))];
+        const lineNames = legs.map((l: any) => l.line?.publicCode).filter(Boolean);
+        const stableId = `entur-${cleanFrom}-${cleanTo}-${tp.startTime}`;
 
-            const fromName = first.from?.stop_point?.name || first.from?.name || fromId;
-            const toName = last.to?.stop_point?.name || last.to?.name || toId;
-            const operators = [...new Set<string>(sections.map((s: any) => s.display_informations?.commercial_mode || s.display_informations?.network).filter(Boolean))];
-            const lineNames = sections.map((s: any) => s.display_informations?.label || s.display_informations?.code).filter(Boolean);
+        const stops = legs.flatMap((l: any) =>
+            (l.intermediateEstimatedCalls ?? []).map((ic: any) => ({
+                stationId: ic.quay?.stopPlace?.id ?? ic.quay?.id ?? '',
+                stationName: ic.quay?.name ?? '',
+                arrivalTime: ic.expectedArrivalTime,
+                departureTime: ic.expectedDepartureTime,
+            }))
+        );
 
-            // Parsear tiempos SNCF (formato: 20260317T143000)
-            const parseSncfTime = (t: string) => {
-                if (!t || t.length < 15) return new Date().toISOString();
-                return `${t.slice(0,4)}-${t.slice(4,6)}-${t.slice(6,8)}T${t.slice(9,11)}:${t.slice(11,13)}:${t.slice(13,15)}`;
+        return buildRoute({
+            id: stableId,
+            fromStationId: fromId,
+            toStationId: toId,
+            fromStationName: first.fromPlace?.name ?? fromId,
+            toStationName: last.toPlace?.name ?? toId,
+            fromCoords: null,
+            toCoords: null,
+            departureTime: tp.startTime,
+            arrivalTime: tp.endTime,
+            price: undefined,
+            operator: operators.join(' → ') || 'Vy/Entur',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.mode || 'rail'),
+            platform: undefined,
+            delay: 0,
+            lineName: lineNames.join(' → '),
+            legs: legs.length,
+            stops,
+        });
+    }).filter(Boolean) as Route[];
+}
+
+// ─── API Digitransit (Finlandia) ────────────────────────────────────────────
+// Registro gratuito: https://digitransit.fi/en/developers/
+// Cubre todo el transporte público de Finlandia (VR trenes, HSL Helsinki, etc.)
+
+async function fetchStationsFromDigitransit(query: string): Promise<Station[]> {
+    if (!DIGITRANSIT_API_KEY) return [];
+    const res = await fetch(
+        `https://api.digitransit.fi/geocoding/v1/search?text=${encodeURIComponent(query)}&size=8&layers=stop,station&lang=en`,
+        {
+            headers: { 'digitransit-subscription-key': DIGITRANSIT_API_KEY },
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        }
+    );
+    if (!res.ok) throw new Error(`Digitransit API ${res.status}`);
+    const data = await res.json();
+
+    return (data.features ?? []).map((f: any) => {
+        const props = f.properties;
+        const id = `digitransit-${props.id || props.gid}`;
+        const station: Station = {
+            id,
+            name: props.name,
+            city: props.locality || props.region || 'Finlandia',
+            country: 'Finlandia',
+            coordinates: f.geometry?.coordinates
+                ? { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }
+                : undefined,
+        };
+        cacheStationName(id, station.name);
+        return station;
+    });
+}
+
+async function fetchRoutesFromDigitransit(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    if (!DIGITRANSIT_API_KEY) return [];
+
+    // Necesitamos coordenadas para Digitransit OTP
+    const fromCoords = stationCoordsCache.get(fromId);
+    const toCoords = stationCoordsCache.get(toId);
+    if (!fromCoords || !toCoords) return []; // Sin coordenadas no podemos buscar
+
+    const now = new Date();
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+
+    const query = `{
+        plan(
+            from: { lat: ${fromCoords.lat}, lon: ${fromCoords.lng} }
+            to: { lat: ${toCoords.lat}, lon: ${toCoords.lng} }
+            date: "${searchDate}"
+            time: "08:00:00"
+            numItineraries: 6
+            transportModes: [{ mode: RAIL }, { mode: BUS }, { mode: TRAM }]
+        ) {
+            itineraries {
+                startTime
+                endTime
+                duration
+                legs {
+                    mode
+                    startTime
+                    endTime
+                    from { name stop { gtfsId } }
+                    to { name stop { gtfsId } }
+                    route { shortName longName agency { name } }
+                    intermediateStops { name gtfsId lat lon }
+                }
+            }
+        }
+    }`;
+
+    const res = await fetch('https://api.digitransit.fi/routing/v2/finland/gtfs/v1', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'digitransit-subscription-key': DIGITRANSIT_API_KEY,
+        },
+        body: JSON.stringify({ query }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`Digitransit API ${res.status}`);
+    const data = await res.json();
+    const itineraries = data?.data?.plan?.itineraries ?? [];
+
+    return itineraries.map((it: any) => {
+        const legs = it.legs ?? [];
+        const first = legs[0];
+        const last = legs[legs.length - 1];
+        if (!first || !last) return null;
+
+        const operators = [...new Set<string>(legs.map((l: any) => l.route?.agency?.name).filter(Boolean))];
+        const lineNames = legs.map((l: any) => l.route?.shortName).filter(Boolean);
+        const startTime = new Date(it.startTime).toISOString();
+        const endTime = new Date(it.endTime).toISOString();
+        const stableId = `digi-${fromId}-${toId}-${it.startTime}`;
+
+        const stops = legs.flatMap((l: any) =>
+            (l.intermediateStops ?? []).map((s: any) => ({
+                stationId: s.gtfsId ?? '',
+                stationName: s.name ?? '',
+                coordinates: s.lat && s.lon ? { lat: s.lat, lng: s.lon } : undefined,
+            }))
+        );
+
+        return buildRoute({
+            id: stableId,
+            fromStationId: fromId,
+            toStationId: toId,
+            fromStationName: first.from?.name ?? fromId,
+            toStationName: last.to?.name ?? toId,
+            fromCoords: fromCoords ? { latitude: fromCoords.lat, longitude: fromCoords.lng } : null,
+            toCoords: toCoords ? { latitude: toCoords.lat, longitude: toCoords.lng } : null,
+            departureTime: startTime,
+            arrivalTime: endTime,
+            price: undefined,
+            operator: operators.join(' → ') || 'VR/HSL',
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.mode || 'RAIL'),
+            platform: undefined,
+            delay: 0,
+            lineName: lineNames.join(' → '),
+            legs: legs.length,
+            stops,
+        });
+    }).filter(Boolean) as Route[];
+}
+
+// ─── API Renfe (España — data.renfe.com CKAN open data) ─────────────────────
+// Portal de datos abiertos de Renfe. Estaciones por región.
+// No tiene journey planner API — las rutas se buscan vía DB HAFAS (conexiones internacionales)
+// y deep-link a renfe.com para reservas domésticas.
+
+// Resource IDs de las principales regiones de cercanías
+const RENFE_STATION_RESOURCES = [
+    'a2368cff-1562-4dde-8466-9635ea3a572a', // Málaga
+];
+
+async function fetchStationsFromRenfe(query: string): Promise<Station[]> {
+    // Buscar en los datasets de estaciones de Renfe
+    const promises = RENFE_STATION_RESOURCES.map(async (resourceId) => {
+        const url = `https://data.renfe.com/api/3/action/datastore_search?resource_id=${resourceId}&q=${encodeURIComponent(query)}&limit=10`;
+        const res = await fetchWithTimeout(url, 8000);
+        if (!res.ok) throw new Error(`Renfe CKAN API ${res.status}`);
+        const data = await res.json();
+        if (!data?.success || !data?.result?.records) return [];
+
+        return data.result.records.map((r: any) => {
+            const code = String(r['CÓDIGO'] || r._id);
+            const id = `renfe-${code}`;
+            const lat = parseFloat(r['LATITUD']);
+            const lng = parseFloat(r['LONGITUD']);
+            const station: Station = {
+                id,
+                name: r['DESCRIPCION'] || r['DESCRIPCIÓN'] || 'Estación',
+                city: r['POBLACION'] || r['POBLACIÓN'] || r['PROVINCIA'] || 'España',
+                country: 'España',
+                coordinates: (!isNaN(lat) && !isNaN(lng)) ? { lat, lng } : undefined,
             };
+            cacheStationName(id, station.name);
+            if (station.coordinates) {
+                stationCoordsCache.set(id, station.coordinates);
+            }
+            return station;
+        });
+    });
 
-            const depTime = parseSncfTime(j.departure_date_time);
-            const arrTime = parseSncfTime(j.arrival_date_time);
-            const stableId = `sncf-${fromId}-${toId}-${j.departure_date_time}`;
-
-            const stops = sections.flatMap((s: any) =>
-                (s.stop_date_times ?? []).map((sdt: any) => ({
-                    stationId: sdt.stop_point?.id ?? '',
-                    stationName: sdt.stop_point?.name ?? '',
-                    arrivalTime: parseSncfTime(sdt.arrival_date_time),
-                    departureTime: parseSncfTime(sdt.departure_date_time),
-                    coordinates: sdt.stop_point?.coord
-                        ? { lat: parseFloat(sdt.stop_point.coord.lat), lng: parseFloat(sdt.stop_point.coord.lon) }
-                        : undefined,
-                }))
-            );
-
-            return buildRoute({
-                id: stableId,
-                fromStationId: fromId,
-                toStationId: toId,
-                fromStationName: fromName,
-                toStationName: toName,
-                fromCoords: first.from?.stop_point?.coord
-                    ? { latitude: parseFloat(first.from.stop_point.coord.lat), longitude: parseFloat(first.from.stop_point.coord.lon) }
-                    : null,
-                toCoords: last.to?.stop_point?.coord
-                    ? { latitude: parseFloat(last.to.stop_point.coord.lat), longitude: parseFloat(last.to.stop_point.coord.lon) }
-                    : null,
-                departureTime: depTime,
-                arrivalTime: arrTime,
-                price: undefined, // SNCF API no devuelve precios
-                operator: operators.join(' → ') || 'SNCF',
-                type: sections.length > 1 ? `${sections.length} tramos` : (first.display_informations?.commercial_mode || 'TGV'),
-                platform: undefined,
-                delay: 0,
-                lineName: lineNames.join(' → '),
-                legs: sections.length,
-                stops,
-            });
-        })
-        .filter(Boolean) as Route[];
+    const results = await Promise.allSettled(promises);
+    return results
+        .filter((r): r is PromiseFulfilledResult<Station[]> => r.status === 'fulfilled')
+        .flatMap(r => r.value);
 }
 
 // ─── Helpers internos ─────────────────────────────────────────────────────────
@@ -1229,7 +1402,7 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
     const safe = sanitizeQuery(query);
     if (safe.length < 2) return FALLBACK_STATIONS;
 
-    // Lanzar las 9 APIs en paralelo; usar las que respondan
+    // Lanzar las 12 APIs en paralelo; usar las que respondan
     const apiResults = await Promise.allSettled([
         fetchStationsFromDB(safe),
         fetchStationsFromSBB(safe),
@@ -1240,7 +1413,9 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
         fetchStationsFromVBB(safe),
         fetchStationsFromBVG(safe),
         fetchStationsFromRejse(safe),
-        fetchStationsFromSNCF(safe),
+        fetchStationsFromEntur(safe),
+        fetchStationsFromDigitransit(safe),
+        fetchStationsFromRenfe(safe),
     ]);
 
     const results: Station[] = [];
@@ -1286,20 +1461,22 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useFlixbus = isFlixbusStation(fromId) || isFlixbusStation(toId);
     const useVBB     = isBerlinStation(fromId) || isBerlinStation(toId);
     const useBVG     = isBerlinStation(fromId) || isBerlinStation(toId);
-    const useRejse   = isDanishStation(fromId) || isDanishStation(toId);
-    const useSNCF    = isFrenchStation(fromId) || isFrenchStation(toId);
+    const useRejse       = isDanishStation(fromId) || isDanishStation(toId);
+    const useEntur       = isNorwegianStation(fromId) || isNorwegianStation(toId);
+    const useDigitransit = isFinnishStation(fromId) || isFinnishStation(toId);
 
     const promises: Promise<Route[]>[] = [];
-    if (useDB)      promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
-    if (useSBB)     promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
-    if (useIrail)   promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
-    if (useOEBB)    promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
-    if (usePKP)     promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
-    if (useFlixbus) promises.push(fetchRoutesFromFlixbus(fromId, toId, validDate).catch(() => []));
-    if (useVBB)     promises.push(fetchRoutesFromVBB(fromId, toId, validDate).catch(() => []));
-    if (useBVG)     promises.push(fetchRoutesFromBVG(fromId, toId, validDate).catch(() => []));
-    if (useRejse)   promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
-    if (useSNCF)    promises.push(fetchRoutesFromSNCF(fromId, toId, validDate).catch(() => []));
+    if (useDB)           promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
+    if (useSBB)          promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
+    if (useIrail)        promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
+    if (useOEBB)         promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
+    if (usePKP)          promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
+    if (useFlixbus)      promises.push(fetchRoutesFromFlixbus(fromId, toId, validDate).catch(() => []));
+    if (useVBB)          promises.push(fetchRoutesFromVBB(fromId, toId, validDate).catch(() => []));
+    if (useBVG)          promises.push(fetchRoutesFromBVG(fromId, toId, validDate).catch(() => []));
+    if (useRejse)        promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
+    if (useEntur)        promises.push(fetchRoutesFromEntur(fromId, toId, validDate).catch(() => []));
+    if (useDigitransit)  promises.push(fetchRoutesFromDigitransit(fromId, toId, validDate).catch(() => []));
 
     const results = await Promise.all(promises);
     const merged = results.flat();

@@ -2,6 +2,31 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AppState, BookingClick, InterrailPlan, InterrailStop, PriceAlert, Route, SearchHistoryEntry, Station, UserProfile } from '../types';
 import { logoutUser } from '../lib/auth';
+import {
+    saveFavorites,
+    savePriceAlerts,
+    saveSearchHistory,
+    saveSettings,
+    saveUserProfile,
+    getCurrentUid,
+    loadUserData,
+    mergeUserData,
+    onAuthChange,
+    type FirestoreUserData,
+} from '../lib/firestore-sync';
+
+// ─── Debounced Firestore sync ────────────────────────────────────────
+// Batches rapid writes (e.g. toggling multiple favorites) into one Firestore call
+const syncTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+function debouncedSync(key: string, fn: (uid: string) => Promise<void>, delayMs = 800) {
+    const uid = getCurrentUid();
+    if (!uid) return; // not authenticated — skip cloud sync
+    clearTimeout(syncTimers[key]);
+    syncTimers[key] = setTimeout(() => {
+        fn(uid).catch((err) => console.warn(`[firestore-sync] ${key} failed:`, err));
+    }, delayMs);
+}
 
 interface TrainActions {
     setStations: (stations: Station[]) => void;
@@ -40,6 +65,8 @@ interface TrainActions {
     setAuthModalOpen: (isOpen: boolean) => void;
     setAnonymousMode: (isAnonymous: boolean) => void;
     logout: () => void;
+    // Firestore sync
+    loadCloudData: (cloudData: FirestoreUserData) => void;
 }
 
 export const useTrainStore = create<AppState & TrainActions>()(
@@ -100,46 +127,64 @@ export const useTrainStore = create<AppState & TrainActions>()(
             },
             setCurrentPlan: (plan) => set({ currentPlan: plan }),
 
-            addSearchHistory: (entry) => set((state) => ({
-                searchHistory: [
-                    entry,
-                    ...state.searchHistory.filter(e => !(e.fromId === entry.fromId && e.toId === entry.toId))
-                ].slice(0, 10)
-            })),
+            addSearchHistory: (entry) => {
+                set((state) => ({
+                    searchHistory: [
+                        entry,
+                        ...state.searchHistory.filter(e => !(e.fromId === entry.fromId && e.toId === entry.toId))
+                    ].slice(0, 10)
+                }));
+                debouncedSync('searchHistory', (uid) => saveSearchHistory(uid, get().searchHistory));
+            },
 
             setOfflineStatus: (isOffline) => set({ isOffline }),
 
-            toggleFavorite: (route) => set((state) => {
-                const isFav = state.favorites.some(r => r.id === route.id);
-                return {
-                    favorites: isFav
-                        ? state.favorites.filter(r => r.id !== route.id)
-                        : [...state.favorites, route]
-                };
-            }),
+            toggleFavorite: (route) => {
+                set((state) => {
+                    const isFav = state.favorites.some(r => r.id === route.id);
+                    return {
+                        favorites: isFav
+                            ? state.favorites.filter(r => r.id !== route.id)
+                            : [...state.favorites, route]
+                    };
+                });
+                debouncedSync('favorites', (uid) => saveFavorites(uid, get().favorites));
+            },
 
             setSelectedRouteId: (selectedRouteId) => set({ selectedRouteId }),
 
-            addPriceAlert: (alertData) => set((state) => ({
-                priceAlerts: [...state.priceAlerts, {
-                    ...alertData,
-                    id: `alert-${Date.now()}`,
-                    createdAt: new Date().toISOString(),
-                    triggered: false,
-                }]
-            })),
+            addPriceAlert: (alertData) => {
+                set((state) => ({
+                    priceAlerts: [...state.priceAlerts, {
+                        ...alertData,
+                        id: `alert-${Date.now()}`,
+                        createdAt: new Date().toISOString(),
+                        triggered: false,
+                    }]
+                }));
+                debouncedSync('priceAlerts', (uid) => savePriceAlerts(uid, get().priceAlerts));
+            },
 
-            removePriceAlert: (id) => set((state) => ({
-                priceAlerts: state.priceAlerts.filter(a => a.id !== id)
-            })),
+            removePriceAlert: (id) => {
+                set((state) => ({
+                    priceAlerts: state.priceAlerts.filter(a => a.id !== id)
+                }));
+                debouncedSync('priceAlerts', (uid) => savePriceAlerts(uid, get().priceAlerts));
+            },
 
-            triggerPriceAlert: (id) => set((state) => ({
-                priceAlerts: state.priceAlerts.map(a => a.id === id ? { ...a, triggered: true } : a)
-            })),
+            triggerPriceAlert: (id) => {
+                set((state) => ({
+                    priceAlerts: state.priceAlerts.map(a => a.id === id ? { ...a, triggered: true } : a)
+                }));
+                debouncedSync('priceAlerts', (uid) => savePriceAlerts(uid, get().priceAlerts));
+            },
 
-            updateUserProfile: (profile) => set((state) => ({
-                userProfile: { ...state.userProfile, ...profile }
-            })),
+            updateUserProfile: (profile) => {
+                set((state) => ({
+                    userProfile: { ...state.userProfile, ...profile }
+                }));
+                debouncedSync('userProfile', (uid) => saveUserProfile(uid, get().userProfile));
+            },
 
 
             // Interrail Route Builder
@@ -179,12 +224,46 @@ export const useTrainStore = create<AppState & TrainActions>()(
                     ...state.bookingClicks
                 ].slice(0, 50)
             })),
-            updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
+            updateSettings: (newSettings) => {
+                set((state) => ({ settings: { ...state.settings, ...newSettings } }));
+                debouncedSync('settings', (uid) => saveSettings(uid, get().settings));
+            },
             completeOnboarding: () => set({ hasSeenOnboarding: true }),
             setAuthModalOpen: (isOpen) => set({ isAuthModalOpen: isOpen }),
             setAnonymousMode: (isAnonymous) => set({ isAnonymousMode: isAnonymous }),
+
+            // Load cloud data and merge with local state
+            loadCloudData: (cloudData) => set((state) => {
+                const merged = mergeUserData(
+                    {
+                        favorites: state.favorites,
+                        priceAlerts: state.priceAlerts,
+                        searchHistory: state.searchHistory,
+                        settings: state.settings,
+                    },
+                    cloudData
+                );
+                return {
+                    favorites: merged.favorites,
+                    priceAlerts: merged.priceAlerts,
+                    searchHistory: merged.searchHistory,
+                    settings: merged.settings,
+                    userProfile: {
+                        ...state.userProfile,
+                        name: cloudData.name || state.userProfile.name,
+                        email: cloudData.email || state.userProfile.email,
+                        avatar: cloudData.avatar || state.userProfile.avatar,
+                        country: cloudData.country || state.userProfile.country,
+                        currency: cloudData.currency || state.userProfile.currency,
+                        isRegistered: true,
+                    },
+                };
+            }),
+
             logout: () => {
                 logoutUser().catch(() => {});
+                // Cancel any pending syncs
+                Object.keys(syncTimers).forEach(k => clearTimeout(syncTimers[k]));
                 set({
                     userProfile: {
                         name: 'Viajero',
@@ -199,6 +278,7 @@ export const useTrainStore = create<AppState & TrainActions>()(
                     bookingClicks: [],
                     favorites: [],
                     priceAlerts: [],
+                    searchHistory: [],
                 });
             },
         }),
@@ -223,3 +303,28 @@ export const useTrainStore = create<AppState & TrainActions>()(
         }
     )
 );
+
+// ─── Auth-aware cloud sync initializer ───────────────────────────────
+// Call once at app startup (e.g. in main.tsx or App.tsx).
+// Listens for Firebase Auth state and loads/merges cloud data on login.
+
+let authSyncInitialized = false;
+
+export function initAuthSync(): void {
+    if (authSyncInitialized) return;
+    authSyncInitialized = true;
+
+    onAuthChange(async (user) => {
+        if (user) {
+            // User just logged in (or page refresh with existing session)
+            try {
+                const cloudData = await loadUserData(user.uid);
+                if (cloudData) {
+                    useTrainStore.getState().loadCloudData(cloudData);
+                }
+            } catch (err) {
+                console.warn('[firestore-sync] Failed to load cloud data:', err);
+            }
+        }
+    });
+}

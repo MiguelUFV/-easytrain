@@ -14,7 +14,7 @@ import {
     signOut,
     updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 interface UserResult {
@@ -127,15 +127,34 @@ export async function loginUser(
 
         trackEmailLocally(email);
 
+        // Load profile from Firestore for real data (not hardcoded defaults)
+        let profileData: UserResult = {
+            name: user.displayName || 'Usuario',
+            email: user.email || email,
+            avatar: '🧳',
+            country: 'España',
+            currency: 'EUR',
+        };
+
+        try {
+            const snap = await getDoc(doc(db, 'users', user.uid));
+            if (snap.exists()) {
+                const data = snap.data();
+                profileData = {
+                    name: data.name || profileData.name,
+                    email: data.email || profileData.email,
+                    avatar: data.avatar || profileData.avatar,
+                    country: data.country || profileData.country,
+                    currency: data.currency || profileData.currency,
+                };
+            }
+        } catch {
+            // Firestore read failed — use defaults from Auth
+        }
+
         return {
             success: true,
-            user: {
-                name: user.displayName || 'Usuario',
-                email: user.email || email,
-                avatar: '🧳',
-                country: 'España',
-                currency: 'EUR',
-            },
+            user: profileData,
         };
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : '';

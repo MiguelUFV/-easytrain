@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
-const BASE_URL = 'https://easytrain.vercel.app';
+const BASE_URL = 'https://easytrain-lr09viw32-miguelufvs-projects.vercel.app';
 
 interface SEOConfig {
   title: string;

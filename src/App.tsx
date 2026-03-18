@@ -67,9 +67,9 @@ const Dashboard = () => {
   }, [setInterrailRouteMode]);
 
   useEffect(() => {
-    // Only load initial data if store has no routes yet
-    if (storeRoutes.length > 0) return;
+    // Only load initial data ONCE on mount if store is empty
     const loadInitialData = async () => {
+      if (storeRoutes.length > 0) return;
       setIsLoading(true);
       try {
         const fetchedRoutes = await fetchPopularRoutes();
@@ -82,7 +82,8 @@ const Dashboard = () => {
       }
     };
     loadInitialData();
-  }, [storeRoutes.length, setRoutes, setError]);
+  }, []); // Only run once on mount
+
 
   const handleSearch = async (params: {
     from: string;

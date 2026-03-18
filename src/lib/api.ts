@@ -934,33 +934,23 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
     const safe = sanitizeQuery(query);
     if (safe.length < 2) return FALLBACK_STATIONS;
 
-<<<<<<< Updated upstream
-    // Lanzar las 5 APIs en paralelo; usar las que respondan
-    const [dbResult, chResult, irailResult, oebbResult, pkpResult] = await Promise.allSettled([
+    // Lanzar las 7 APIs en paralelo; usar las que respondan
+    const [dbResult, chResult, irailResult, oebbResult, pkpResult, renfeResult, sncfResult] = await Promise.allSettled([
         fetchStationsFromDB(safe),
         fetchStationsFromSBB(safe),
         fetchStationsFromIrail(safe),
         fetchStationsFromOEBB(safe),
         fetchStationsFromPKP(safe),
-=======
-    // Lanzar las APIs en paralelo; usar las que respondan
-    const [dbResult, chResult, irailResult, renfeResult, sncfResult] = await Promise.allSettled([
-        fetchStationsFromDB(safe),
-        fetchStationsFromSBB(safe),
-        fetchStationsFromIrail(safe),
         fetchStationsFromRenfe(safe),
         fetchStationsFromSNCF(safe),
->>>>>>> Stashed changes
+
     ]);
 
     const results: Station[] = [];
     const seen = new Set<string>();
 
-<<<<<<< Updated upstream
-    for (const r of [dbResult, chResult, irailResult, oebbResult, pkpResult]) {
-=======
-    for (const r of [dbResult, chResult, irailResult, renfeResult, sncfResult]) {
->>>>>>> Stashed changes
+    for (const r of [dbResult, chResult, irailResult, oebbResult, pkpResult, renfeResult, sncfResult]) {
+
         if (r.status === 'fulfilled') {
             for (const s of r.value) {
                 const key = s.name.toLowerCase();
@@ -993,28 +983,19 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useDB    = true; // siempre intentamos DB
     const useSBB   = isSwissStation(fromId) || isSwissStation(toId);
     const useIrail = isBelgianStation(fromId) || isBelgianStation(toId);
-<<<<<<< Updated upstream
     const useOEBB  = isAustrianStation(fromId) || isAustrianStation(toId);
     const usePKP   = isPolishStation(fromId) || isPolishStation(toId);
-=======
     // useRenfe (starts with 71) and useSNCF (starts with 87) logic is currently handled 
     // by the UI fallback since isCountrySupported is true for Spain/France.
->>>>>>> Stashed changes
+
 
     const promises: Promise<Route[]>[] = [];
     if (useDB)    promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
     if (useSBB)   promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
     if (useIrail) promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
-<<<<<<< Updated upstream
     if (useOEBB)  promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
     if (usePKP)   promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
-=======
-    
-    // Para Renfe, aunque no hayamos implementado un fetcher de rutas directo por API CKAN (que es GTFS),
-    // el sistema ya generará el enlace oficial en la UI gracias a que isCountrySupported('España') es true
-    // y resolveStationName funciona con la caché poblada por fetchStationsFromRenfe.
 
->>>>>>> Stashed changes
 
     const results = await Promise.all(promises);
     const merged = results.flat();
@@ -1030,6 +1011,32 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
 
     // Ordenar por hora de salida
     unique.sort((a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime());
+
+    // Si no hay resultados reales pero la zona está en nuestra lista de soportes oficiales,
+    // generamos una ruta "sintética" que permita al usuario ir a la web del operador.
+    if (unique.length === 0) {
+        const fallback = getOfficialFallback(fromId, toId);
+        if (fallback) {
+            const now = new Date();
+            const departure = validDate ? `${validDate}T12:00:00` : now.toISOString();
+            const arrival = validDate ? `${validDate}T15:00:00` : new Date(now.getTime() + 3*3600*1000).toISOString();
+            
+            unique.push(buildRoute({
+                id: `synthetic-${fromId}-${toId}`,
+                fromStationId: fromId,
+                toStationId: toId,
+                fromStationName: resolveStationName(fromId),
+                toStationName: resolveStationName(toId),
+                departureTime: departure,
+                arrivalTime: arrival,
+                operator: fallback.name,
+                type: 'Reserva Directa',
+                lineName: 'Enlace Oficial',
+                price: undefined,
+                stops: []
+            }));
+        }
+    }
 
     return unique;
 }

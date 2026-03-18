@@ -82,7 +82,17 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^\/api-(db|ch|irail|oebb|pkp)\/|https:\/\/(v6\.db\.transport\.rest|transport\.opendata\.ch|api\.irail\.be|data\.renfe\.com|ressources\.data\.sncf\.com)\/.*/i,
+            // Cache de búsquedas de estaciones (respuestas rápidas)
+            urlPattern: /^\/api-(db|ch|irail|oebb|pkp|flixbus|vbb|bvg|rejse)\/.*(locations|stations)|https:\/\/(v6\.db\.transport\.rest|transport\.opendata\.ch|api\.irail\.be|data\.renfe\.com|ressources\.data\.sncf\.com)\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'station-searches',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 }, // 1h
+            },
+          },
+          {
+            // Cache de rutas/conexiones (datos frescos)
+            urlPattern: /^\/api-(db|ch|irail|oebb|pkp|flixbus|vbb|bvg|rejse)\/.*(journeys|connections)/,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'train-api-cache',
@@ -194,6 +204,30 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api-pkp/, ''),
+      },
+      '/api-flixbus': {
+        target: 'https://1.flixbus.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-flixbus/, ''),
+      },
+      '/api-vbb': {
+        target: 'https://v6.vbb.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-vbb/, ''),
+      },
+      '/api-bvg': {
+        target: 'https://v6.bvg.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-bvg/, ''),
+      },
+      '/api-rejse': {
+        target: 'https://v6.rejseplanen.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-rejse/, ''),
       },
     },
   },

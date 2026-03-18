@@ -98,7 +98,7 @@ export const ItineraryExporter = ({ route, fromName, toName }: Props) => {
                 href={bookingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 px-3 py-2 rounded-xl hover:bg-indigo-500/10 border border-indigo-500/20 hover:border-indigo-400/30 transition-all"
+                className="flex items-center gap-1.5 text-[11px] font-bold text-[#d4a853] hover:text-[#f0c674] px-3 py-2 rounded-xl hover:bg-[#d4a853]/10 border border-[#d4a853]/20 hover:border-[#d4a853]/30 transition-all"
             >
                 <ExternalLink size={13} /> Comprar billete
             </motion.a>

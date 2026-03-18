@@ -130,10 +130,10 @@ export const AuthModal = () => {
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-md glass-card overflow-hidden border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.2)]"
+                    className="relative w-full max-w-md glass-card overflow-hidden border-[#d4a853]/30 shadow-[0_0_50px_rgba(212,168,83,0.15)]"
                 >
                     {/* Barra decorativa superior */}
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500" />
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#d4a853] via-[#f0c674] to-[#d4a853]" />
 
                     <button
                         onClick={() => setAuthModalOpen(false)}
@@ -146,7 +146,7 @@ export const AuthModal = () => {
                     <div className="p-8">
                         {/* Logo */}
                         <div className="flex flex-col items-center text-center mb-6">
-                            <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 mb-3 border border-indigo-500/20">
+                            <div className="w-12 h-12 bg-[#d4a853]/10 rounded-2xl flex items-center justify-center text-[#d4a853] mb-3 border border-[#d4a853]/20">
                                 <Train size={24} />
                             </div>
                             <h2 className="text-xl font-black text-white tracking-tight">EasyTrain</h2>
@@ -159,7 +159,7 @@ export const AuthModal = () => {
                                 onClick={() => setTab('register')}
                                 className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
                                     tab === 'register'
-                                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
+                                        ? 'bg-[#d4a853] text-[#0a0f1c] shadow-lg shadow-[#d4a853]/25'
                                         : 'text-gray-400 hover:text-white'
                                 }`}
                             >
@@ -170,7 +170,7 @@ export const AuthModal = () => {
                                 onClick={() => setTab('login')}
                                 className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${
                                     tab === 'login'
-                                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
+                                        ? 'bg-[#d4a853] text-[#0a0f1c] shadow-lg shadow-[#d4a853]/25'
                                         : 'text-gray-400 hover:text-white'
                                 }`}
                             >
@@ -197,7 +197,7 @@ export const AuthModal = () => {
                                             type="text"
                                             value={form.name}
                                             onChange={e => { setForm({...form, name: e.target.value}); clearErrors(); }}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-[#d4a853]/50 transition-colors"
                                             placeholder="Tu nombre completo"
                                             minLength={2}
                                             maxLength={50}
@@ -220,7 +220,7 @@ export const AuthModal = () => {
                                         className={`w-full bg-white/5 border rounded-xl py-3 pl-10 pr-10 text-sm focus:outline-none transition-colors ${
                                             fieldErrors.email
                                                 ? 'border-red-500/50 focus:border-red-500/70'
-                                                : 'border-white/10 focus:border-indigo-500/50'
+                                                : 'border-white/10 focus:border-[#d4a853]/50'
                                         }`}
                                         placeholder="tu@email.com"
                                         required
@@ -267,7 +267,7 @@ export const AuthModal = () => {
                                         type="password"
                                         value={form.password}
                                         onChange={e => { setForm({...form, password: e.target.value}); clearErrors(); }}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-[#d4a853]/50 transition-colors"
                                         placeholder={tab === 'login' ? 'Tu contraseña' : 'Mínimo 6 caracteres'}
                                         minLength={6}
                                         required
@@ -305,7 +305,7 @@ export const AuthModal = () => {
                                 onClick={handleGuest}
                                 className="w-full py-3 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-xl transition-all border border-white/5 flex items-center justify-center gap-2 group mt-2"
                             >
-                                <Zap size={14} className="text-indigo-400 group-hover:fill-current" />
+                                <Zap size={14} className="text-[#d4a853] group-hover:fill-current" />
                                 Continuar como Invitado
                             </button>
                         </div>

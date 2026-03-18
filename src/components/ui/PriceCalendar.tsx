@@ -57,11 +57,11 @@ export const PriceCalendar = ({ toName, fromId, toId, onSelectDate, selectedDate
         <div className="glass-card p-5 border-white/5 bg-white/[0.02]">
             <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                    <div className="w-8 h-8 rounded-xl bg-[#d4a853]/10 flex items-center justify-center text-[#d4a853]">
                         <TrendingDown size={14} />
                     </div>
                     <div>
-                        <div className="text-[9px] font-black uppercase tracking-[0.1em] text-indigo-400/80">Calendario de Precios</div>
+                        <div className="text-[9px] font-black uppercase tracking-[0.1em] text-[#d4a853]/80">Calendario de Precios</div>
                         <h3 className="text-[11px] font-bold text-white leading-tight truncate max-w-[150px]">{toName}</h3>
                     </div>
                 </div>
@@ -105,7 +105,7 @@ export const PriceCalendar = ({ toName, fromId, toId, onSelectDate, selectedDate
                             disabled={isPast}
                             className={`relative flex flex-col items-center justify-center p-1.5 rounded-xl transition-all aspect-square border ${
                                 isSelected
-                                    ? 'bg-indigo-500 text-white border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)] z-10'
+                                    ? 'bg-[#d4a853] text-[#0a0f1c] border-[#d4a853] shadow-[0_0_15px_rgba(212,168,83,0.3)] z-10'
                                     : isMin && !isPast
                                         ? 'bg-green-500/10 border-green-500/20 hover:bg-green-500/20'
                                         : isPast
@@ -115,12 +115,12 @@ export const PriceCalendar = ({ toName, fromId, toId, onSelectDate, selectedDate
                                                 : 'bg-white/5 border-white/5 hover:bg-white/10'
                             }`}
                         >
-                            <span className={`text-[8px] font-bold ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>
+                            <span className={`text-[8px] font-bold ${isSelected ? 'text-[#0a0f1c]/70' : 'text-gray-500'}`}>
                                 {format(day, 'd')}
                             </span>
                             {price && !isPast && (
                                 <span className={`text-[10px] font-black mt-0.5 ${
-                                    isSelected ? 'text-white' : isMin ? 'text-green-400' : heatLevel > 0.7 ? 'text-red-400/80' : 'text-gray-300'
+                                    isSelected ? 'text-[#0a0f1c]' : isMin ? 'text-green-400' : heatLevel > 0.7 ? 'text-red-400/80' : 'text-gray-300'
                                 }`}>
                                     {price}€
                                 </span>
@@ -140,7 +140,7 @@ export const PriceCalendar = ({ toName, fromId, toId, onSelectDate, selectedDate
                         <span className="text-[8px] font-bold text-gray-500 uppercase">Mejor Precio</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#d4a853]" />
                         <span className="text-[8px] font-bold text-gray-500 uppercase">Seleccionado</span>
                     </div>
                 </div>

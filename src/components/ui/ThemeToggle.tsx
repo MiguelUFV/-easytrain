@@ -13,7 +13,7 @@ export const ThemeToggle = () => {
             {theme === 'dark' ? (
                 <Sun size={16} className="text-amber-400" />
             ) : (
-                <Moon size={16} className="text-indigo-400" />
+                <Moon size={16} className="text-[#d4a853]" />
             )}
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                 {theme === 'dark' ? 'Claro' : 'Oscuro'}

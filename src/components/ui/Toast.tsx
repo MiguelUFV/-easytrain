@@ -44,10 +44,10 @@ export const ToastContainer = () => {
                     >
                         <div className={`
                             flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl
-                            ${toast.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                              toast.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                              toast.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
-                              'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'}
+                            ${toast.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 
+                               toast.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 
+                               toast.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                               'bg-[#d4a853]/10 border-[#d4a853]/20 text-[#d4a853]'}
                         `}>
                             {toast.type === 'success' && <CheckCircle size={18} />}
                             {toast.type === 'error' && <AlertCircle size={18} />}

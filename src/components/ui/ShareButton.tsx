@@ -44,7 +44,7 @@ export const ShareButton = ({ route }: Props) => {
         <div className="relative">
             <button
                 onClick={shareNative}
-                className="p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-indigo-400 transition-colors"
+                className="p-2 rounded-lg hover:bg-white/5 text-gray-500 hover:text-[#d4a853] transition-colors"
                 title="Compartir"
             >
                 <Share2 size={16} />
@@ -60,7 +60,7 @@ export const ShareButton = ({ route }: Props) => {
                         <Send size={14} />
                         Telegram
                     </button>
-                    <button onClick={copyLink} className="flex items-center gap-2 w-full px-3 py-2 text-xs font-bold rounded-lg hover:bg-indigo-500/10 text-gray-300 hover:text-indigo-400 transition-colors">
+                    <button onClick={copyLink} className="flex items-center gap-2 w-full px-3 py-2 text-xs font-bold rounded-lg hover:bg-[#d4a853]/10 text-gray-300 hover:text-[#d4a853] transition-colors">
                         {copied ? <Check size={14} className="text-green-400" /> : <Link size={14} />}
                         {copied ? '¡Copiado!' : 'Copiar enlace'}
                     </button>

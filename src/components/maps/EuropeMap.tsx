@@ -17,12 +17,12 @@ const EUROPE_ZOOM = 5;
 
 const getTypeColor = (type: string): string => {
     switch (type) {
-        case 'HighSpeed': return '#6366f1';
+        case 'HighSpeed': return '#d4a853';
         case 'Intercity': return '#22d3ee';
         case 'Regional': return '#a3e635';
         case 'NightTrain': return '#c084fc';
         case 'Ferry': return '#00f3ff';
-        default: return '#6366f1';
+        default: return '#d4a853';
     }
 };
 
@@ -175,7 +175,7 @@ const AtmosphericOverlay = () => {
 
     return (
         <div className="absolute inset-0 pointer-events-none z-[1001] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 via-transparent to-purple-500/5 opacity-50 blur-3xl animate-pulse" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#d4a853]/5 via-transparent to-[#f0c674]/5 opacity-50 blur-3xl animate-pulse" />
             <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-blue-400/10 to-transparent blur-2xl" />
         </div>
     );
@@ -494,7 +494,7 @@ export const EuropeMap = ({
                                         <Tooltip direction="top" offset={[0, -10]} permanent={zoom >= 7} className="station-tooltip">
                                             <div style={{
                                                 background: '#0f172a', color: 'white', padding: '6px 10px', borderRadius: '8px',
-                                                border: `1px solid ${isTransfer ? '#f59e0b50' : (isStart ? '#6366f150' : (isEnd ? '#22c55e50' : 'rgba(255,255,255,0.15)'))}`,
+                                                border: `1px solid ${isTransfer ? '#f59e0b50' : (isStart ? '#d4a85350' : (isEnd ? '#22c55e50' : 'rgba(255,255,255,0.15)'))}`,
                                                 fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                                             }}>
                                                 <div style={{ fontWeight: 800, fontSize: '11px', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -502,7 +502,7 @@ export const EuropeMap = ({
                                                     {pt.name}
                                                 </div>
                                                 {(isStart || isEnd || isTransfer) && (
-                                                    <div style={{ fontSize: '9px', color: isStart ? '#818cf8' : isEnd ? '#4ade80' : '#fbbf24', fontWeight: 700, marginTop: '2px' }}>
+                                                    <div style={{ fontSize: '9px', color: isStart ? '#d4a853' : isEnd ? '#4ade80' : '#fbbf24', fontWeight: 700, marginTop: '2px' }}>
                                                         {isStart ? 'ORIGEN' : isEnd ? 'DESTINO' : 'TRANSBORDO'}
                                                     </div>
                                                 )}
@@ -521,7 +521,7 @@ export const EuropeMap = ({
                     <NeonRoute 
                         key={`ir-seg-${i}`}
                         path={seg.path}
-                        color="#6366f1"
+                        color="#d4a853"
                         isInterrail={true}
                     />
                 ))}
@@ -548,7 +548,7 @@ export const EuropeMap = ({
                             <Tooltip direction="top" offset={[0, -12]} permanent className="station-tooltip">
                                 <div style={{
                                     background: '#0f172a', color: 'white', padding: '6px 10px', borderRadius: '8px',
-                                    border: `1px solid ${isFirst ? '#22c55e50' : isLast ? '#ef444450' : '#6366f150'}`,
+                                    border: `1px solid ${isFirst ? '#22c55e50' : isLast ? '#ef444450' : '#d4a85350'}`,
                                     fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
                                 }}>
                                     <div style={{ fontWeight: 800, fontSize: '11px' }}>
@@ -622,7 +622,7 @@ export const EuropeMap = ({
                             center={[station.coordinates.lat, station.coordinates.lng]}
                             radius={radius}
                             pathOptions={{
-                                color: isActive || interrailStopIds.has(station.id) ? '#00f3ff' : tier === 1 ? '#818cf8' : '#6366f1',
+                                color: isActive || interrailStopIds.has(station.id) ? '#00f3ff' : tier === 1 ? '#d4a853' : '#d4a853',
                                 fillColor: isActive || interrailStopIds.has(station.id) ? '#00f3ff' : '#0f0f1a',
                                 fillOpacity: 1,
                                 weight: isActive ? 3 : tier <= 2 ? 2 : 1.5,
@@ -639,7 +639,7 @@ export const EuropeMap = ({
                             <Tooltip direction="top" offset={[0, -8]} className="station-tooltip">
                                 <div style={{
                                     background: '#0f172a', color: 'white', padding: '8px 12px', borderRadius: '10px',
-                                    border: '1px solid rgba(99,102,241,0.3)', fontFamily: 'Inter, system-ui, sans-serif',
+                                    border: '1px solid rgba(212,168,83,0.3)', fontFamily: 'Inter, system-ui, sans-serif',
                                 }}>
                                     <div style={{ fontWeight: 800, fontSize: '13px' }}>{station.city}</div>
                                     <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{station.name}</div>
@@ -648,7 +648,7 @@ export const EuropeMap = ({
                                             Clic para {isInterrailStop ? 'quitar' : 'añadir'}
                                         </div>
                                     ) : (
-                                        <div style={{ fontSize: '10px', color: '#6366f1', fontWeight: 600, marginTop: '4px' }}>
+                                        <div style={{ fontSize: '10px', color: '#d4a853', fontWeight: 600, marginTop: '4px' }}>
                                             {count} {count === 1 ? 'ruta' : 'rutas'}
                                         </div>
                                     )}
@@ -659,14 +659,14 @@ export const EuropeMap = ({
                                     <div style={{
                                         background: '#0f172a', color: 'white', padding: '14px 16px', borderRadius: '12px',
                                         minWidth: '230px', maxHeight: '300px', overflowY: 'auto',
-                                        border: '1px solid rgba(99,102,241,0.3)', fontFamily: 'Inter, system-ui, sans-serif',
+                                        border: '1px solid rgba(212,168,83,0.3)', fontFamily: 'Inter, system-ui, sans-serif',
                                     }}>
                                         <div style={{ fontWeight: 800, fontSize: '15px', marginBottom: '2px' }}>{station.city}</div>
                                         <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>
                                             {station.name} — {station.country}
                                         </div>
                                         <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
-                                            <div style={{ fontSize: '11px', color: '#6366f1', fontWeight: 600, marginBottom: '6px' }}>
+                                            <div style={{ fontSize: '11px', color: '#d4a853', fontWeight: 600, marginBottom: '6px' }}>
                                                 {count} {count === 1 ? 'ruta disponible' : 'rutas disponibles'}
                                             </div>
                                             {filteredRoutes
@@ -691,7 +691,7 @@ export const EuropeMap = ({
                                                                 }} />
                                                                 {dest?.city ?? '?'} <span style={{ color: '#64748b' }}>({r.operator})</span>
                                                             </span>
-                                                            <span style={{ color: '#818cf8', fontWeight: 600 }}>{r.price ?? '?'}€</span>
+                                                            <span style={{ color: '#d4a853', fontWeight: 600 }}>{r.price ?? '?'}€</span>
                                                         </div>
                                                     );
                                                 })}
@@ -733,14 +733,14 @@ export const EuropeMap = ({
 
             {/* Stats */}
             <div className="absolute top-6 right-6 z-[1000]">
-                <div className="glass-card px-4 py-2.5 rounded-xl flex items-center gap-3" style={{ background: 'rgba(10,10,12,0.85)', borderColor: 'rgba(99,102,241,0.2)' }}>
+                <div className="glass-card px-4 py-2.5 rounded-xl flex items-center gap-3" style={{ background: 'rgba(10,10,12,0.85)', borderColor: 'rgba(212,168,83,0.2)' }}>
                     <div className="flex items-center gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-md shadow-indigo-500/50" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#d4a853] shadow-md shadow-[#d4a853]/50" />
                         <span className="text-[11px] font-semibold text-white">{visibleStations.length}/{stations.length} estaciones</span>
                     </div>
                     <div className="w-px h-3 bg-white/10" />
                     <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-[2px] bg-indigo-400 rounded-full" />
+                        <div className="w-3 h-[2px] bg-[#d4a853] rounded-full" />
                         <span className="text-[11px] font-semibold text-white">{filteredRoutes.length}/{routes.length} rutas</span>
                     </div>
                     <div className="w-px h-3 bg-white/10" />
@@ -753,7 +753,7 @@ export const EuropeMap = ({
                 <div className="absolute top-16 left-6 z-[1000] flex flex-wrap gap-1.5 mt-2">
                     {([
                         { key: 'all', label: 'Todas', color: '#fff' },
-                        { key: 'HighSpeed', label: 'Alta Velocidad', color: '#6366f1' },
+                        { key: 'HighSpeed', label: 'Alta Velocidad', color: '#d4a853' },
                         { key: 'Intercity', label: 'Intercity', color: '#22d3ee' },
                         { key: 'Regional', label: 'Regional', color: '#a3e635' },
                         { key: 'NightTrain', label: 'Nocturno', color: '#c084fc' },
@@ -797,11 +797,11 @@ export const EuropeMap = ({
                     className="px-5 py-3 rounded-2xl font-bold text-sm flex items-center gap-2.5 transition-all shadow-xl"
                     style={{
                         background: interrailRouteMode
-                            ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                            ? 'linear-gradient(135deg, #d4a853, #c9973f)'
                             : 'rgba(10,10,12,0.9)',
-                        border: `1px solid ${interrailRouteMode ? '#818cf8' : 'rgba(99,102,241,0.3)'}`,
+                        border: `1px solid ${interrailRouteMode ? '#d4a853' : 'rgba(212,168,83,0.3)'}`,
                         color: interrailRouteMode ? 'white' : '#a5b4fc',
-                        boxShadow: interrailRouteMode ? '0 8px 32px rgba(99,102,241,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
+                        boxShadow: interrailRouteMode ? '0 8px 32px rgba(212,168,83,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
                     }}
                 >
                     <MapPin size={16} />
@@ -854,10 +854,10 @@ export const EuropeMap = ({
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         className="absolute top-20 right-6 z-[1000] w-72"
                     >
-                        <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,12,0.92)', border: '1px solid rgba(99,102,241,0.2)', backdropFilter: 'blur(20px)' }}>
+                        <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(10,10,12,0.92)', border: '1px solid rgba(212,168,83,0.2)', backdropFilter: 'blur(20px)' }}>
                             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
                                 <h3 className="text-sm font-bold flex items-center gap-2">
-                                    <MapPin size={14} className="text-indigo-400" />
+                                    <MapPin size={14} className="text-[#d4a853]" />
                                     Tu Ruta ({interrailStops.length})
                                 </h3>
                                 <button onClick={toggleInterrailRouteMode} className="text-gray-500 hover:text-white transition-colors">
@@ -884,7 +884,7 @@ export const EuropeMap = ({
                                             exit={{ opacity: 0, x: -20 }}
                                             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 group"
                                         >
-                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${isFirst ? 'bg-green-500/20 text-green-400' : isLast ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${isFirst ? 'bg-green-500/20 text-green-400' : isLast ? 'bg-red-500/20 text-red-400' : 'bg-[#d4a853]/20 text-[#d4a853]'}`}>
                                                 {idx + 1}
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -929,7 +929,7 @@ export const EuropeMap = ({
                                 <div className="border-t border-white/5 p-3">
                                     <a
                                         href="/interrail"
-                                        className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                                        className="w-full py-2.5 bg-[#c9973f] hover:bg-[#d4a853] rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors"
                                     >
                                         <Train size={14} /> Abrir en Planificador
                                     </a>
@@ -942,7 +942,7 @@ export const EuropeMap = ({
 
             {/* Network status */}
             <div className="absolute bottom-6 right-6 z-[1000]">
-                <div className="glass-card p-3 rounded-xl" style={{ background: 'rgba(10,10,12,0.85)', borderColor: 'rgba(99,102,241,0.15)' }}>
+                <div className="glass-card p-3 rounded-xl" style={{ background: 'rgba(10,10,12,0.85)', borderColor: 'rgba(212,168,83,0.15)' }}>
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         <span className="text-[11px] font-semibold text-white">Red Operativa</span>

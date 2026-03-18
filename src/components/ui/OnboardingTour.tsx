@@ -11,32 +11,32 @@ const STEPS = [
   {
     title: "¡Bienvenido a EasyTrain!",
     desc: "Tu compañero definitivo para explorar Europa sobre raíles. Diseñado para ofrecerte la mejor experiencia de viaje.",
-    icon: <Train className="text-indigo-400" size={32} />,
-    color: "from-indigo-500 to-purple-600"
+    icon: <Train className="text-[#d4a853]" size={32} />,
+    color: "from-[#d4a853] to-[#c9973f]"
   },
   {
     title: "Planificador Inteligente",
     desc: "Optimiza tu ruta Interrail usando nuestro motor de búsqueda avanzado. Encuentra las mejores conexiones y ahorra tiempo.",
     icon: <CalendarIcon className="text-amber-400" size={32} />,
-    color: "from-amber-400 to-orange-500"
+    color: "from-amber-500 to-orange-600"
   },
   {
     title: "Mapa Interactivo 3D",
     desc: "Visualiza tus trayectos en tiempo real con nuestro mapa de última generación. Sigue cada tramo de tu aventura.",
     icon: <MapIcon className="text-emerald-400" size={32} />,
-    color: "from-emerald-400 to-teal-500"
+    color: "from-emerald-500 to-teal-600"
   },
   {
     title: "Tu Perfil de Viajero",
     desc: "Regístrate para desbloquear reservas directas, guardar tus favoritos y obtener medallas exclusivas por tus logros.",
-    icon: <UserIcon className="text-pink-400" size={32} />,
-    color: "from-pink-400 to-rose-500"
+    icon: <UserIcon className="text-rose-400" size={32} />,
+    color: "from-rose-500 to-pink-600"
   },
   {
     title: "Experiencia Premium",
     desc: "¿Listo para empezar? Explora miles de rutas y vive la libertad ferroviaria con EasyTrain.",
-    icon: <Zap className="text-indigo-400" size={32} />,
-    color: "from-indigo-400 to-blue-600"
+    icon: <Zap className="text-[#d4a853]" size={32} />,
+    color: "from-[#d4a853] to-[#a8842e]"
   }
 ];
 
@@ -71,7 +71,7 @@ export const OnboardingTour = () => {
     completeOnboarding();
   };
 
-  const step = STEPS[currentStep];
+  const step = STEPS[currentStep] ?? STEPS[0];
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-md p-6">
@@ -119,7 +119,7 @@ export const OnboardingTour = () => {
               {STEPS.map((_, i) => (
                 <div 
                   key={i}
-                  className={`h-1 rounded-full transition-all duration-300 ${i === currentStep ? 'w-6 bg-indigo-500' : 'w-2 bg-white/10'}`}
+                  className={`h-1 rounded-full transition-all duration-300 ${i === currentStep ? 'w-6 bg-[#d4a853]' : 'w-2 bg-white/10'}`}
                 />
               ))}
             </div>
@@ -135,7 +135,7 @@ export const OnboardingTour = () => {
               )}
               <button 
                 onClick={next}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm text-white flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+                className="px-5 py-2.5 bg-[#d4a853] hover:bg-[#c9973f] rounded-xl font-bold text-sm text-[#0a0f1c] flex items-center gap-2 transition-all shadow-lg shadow-[#d4a853]/20"
               >
                 {currentStep === STEPS.length - 1 ? 'Empezar' : 'Siguiente'}
                 <ChevronRight size={16} />

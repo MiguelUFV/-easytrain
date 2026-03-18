@@ -110,7 +110,7 @@ const MoodTags = ({ stops, legs }: { stops: string[], legs: any[] }) => {
         const numStops = stops.length;
         
         if (hasFerry) result.push({ label: '🚢 Marítima', icon: <Waves size={10} />, color: 'text-cyan-400', bg: 'bg-cyan-500/10' });
-        if (hasHighSpeed) result.push({ label: '⚡ Ultra Rápida', icon: <Zap size={10} />, color: 'text-indigo-400', bg: 'bg-indigo-500/10' });
+        if (hasHighSpeed) result.push({ label: '⚡ Ultra Rápida', icon: <Zap size={10} />, color: 'text-[#d4a853]', bg: 'bg-[#d4a853]/10' });
         if (numStops > 5) result.push({ label: '🏛️ Cultural', icon: <Landmark size={10} />, color: 'text-amber-400', bg: 'bg-amber-500/10' });
         if (numStops < 4 && !hasHighSpeed) result.push({ label: '🌲 Relax', icon: <Trees size={10} />, color: 'text-green-400', bg: 'bg-green-500/10' });
         
@@ -149,7 +149,7 @@ const TipsAIPanel = ({ stationIds, totalDays }: { stationIds: string[], totalDay
 
         if (stationIds.length > 5) {
             result.push({
-                icon: <RouteIcon size={14} className="text-indigo-400" />,
+                icon: <RouteIcon size={14} className="text-[#d4a853]" />,
                 title: "Ruta Intensa",
                 text: "Tienes muchas paradas. Considera añadir 1-2 días de descanso para no agotarte."
             });
@@ -165,7 +165,7 @@ const TipsAIPanel = ({ stationIds, totalDays }: { stationIds: string[], totalDay
 
         if (result.length === 0) {
             result.push({
-                icon: <Sparkles size={14} className="text-purple-400" />,
+                icon: <Sparkles size={14} className="text-[#d4a853]" />,
                 title: "Explora más",
                 text: "Añade una ciudad más a tu ruta para ver recomendaciones inteligentes."
             });
@@ -403,7 +403,7 @@ export const InterrailPlanner = () => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-black flex items-center gap-2.5">
-                            <Calendar className="text-indigo-400" size={24} />
+                            <Calendar className="text-[#d4a853]" size={24} />
                             Planificador Interrail
                         </h1>
                         <p className="text-gray-500 text-xs mt-0.5">
@@ -437,14 +437,14 @@ export const InterrailPlanner = () => {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.05 }}
                                         onClick={() => loadPreset(route)}
-                                        className="relative overflow-hidden p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-indigo-500/30 transition-all text-left group"
+                                        className="relative overflow-hidden p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-[#d4a853]/30 transition-all text-left group"
                                     >
                                         <div className="absolute top-0 right-0 p-3 text-2xl opacity-20 group-hover:opacity-40 transition-opacity">
                                             {route.emoji}
                                         </div>
                                         <div className="relative z-10">
-                                            <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Plantilla</div>
-                                            <h3 className="text-sm font-black text-white mb-1 group-hover:text-indigo-400 transition-colors truncate">
+                                            <div className="text-[10px] font-black text-[#d4a853] uppercase tracking-widest mb-1">Plantilla</div>
+                                            <h3 className="text-sm font-black text-white mb-1 group-hover:text-[#d4a853] transition-colors truncate">
                                                 {route.name}
                                             </h3>
                                             <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed mb-3 h-7">
@@ -459,7 +459,7 @@ export const InterrailPlanner = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/0 to-transparent group-hover:via-indigo-500/50 transition-all" />
+                                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#d4a853]/0 to-transparent group-hover:via-[#d4a853]/50 transition-all" />
                                     </motion.button>
                                 ))}
                             </div>
@@ -498,13 +498,13 @@ export const InterrailPlanner = () => {
                     <div className="flex bg-white/[0.03] p-0.5 rounded-xl border border-white/5 gap-0.5">
                         <button
                             onClick={() => setActiveTab('config')}
-                            className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeTab === 'config' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300 border border-transparent'}`}
+                            className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeTab === 'config' ? 'bg-[#d4a853]/20 text-[#d4a853] border border-[#d4a853]/30' : 'text-gray-500 hover:text-gray-300 border border-transparent'}`}
                         >
                             Configurar
                         </button>
                         <button
                             onClick={() => setActiveTab('result')}
-                            className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeTab === 'result' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-gray-500 hover:text-gray-300 border border-transparent'} ${!result ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            className={`flex-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeTab === 'result' ? 'bg-[#d4a853]/20 text-[#d4a853] border border-[#d4a853]/30' : 'text-gray-500 hover:text-gray-300 border border-transparent'} ${!result ? 'opacity-30 cursor-not-allowed' : ''}`}
                             disabled={!result}
                         >
                             Resultado
@@ -518,7 +518,7 @@ export const InterrailPlanner = () => {
                                 <div className="glass-card p-4">
                                     <h3 className="font-bold text-sm mb-3 flex items-center justify-between">
                                         <span className="flex items-center gap-1.5">
-                                            <MapPin size={14} className="text-indigo-400" /> Paradas ({selectedStationIds.length})
+                                            <MapPin size={14} className="text-[#d4a853]" /> Paradas ({selectedStationIds.length})
                                         </span>
                                         {selectedStationIds.length > 0 && (
                                             <button onClick={() => { clearInterrailStops(); setResult(null); }} className="text-[9px] text-gray-600 hover:text-red-400 transition-colors flex items-center gap-1">
@@ -539,7 +539,7 @@ export const InterrailPlanner = () => {
                                                     animate={{ opacity: 1, x: 0 }}
                                                     className="flex items-center gap-1.5 bg-white/5 rounded-xl px-2.5 py-2 group"
                                                 >
-                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${i === 0 ? 'bg-green-500/20 text-green-400' : i === selectedStationIds.length - 1 ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${i === 0 ? 'bg-green-500/20 text-green-400' : i === selectedStationIds.length - 1 ? 'bg-red-500/20 text-red-400' : 'bg-[#d4a853]/20 text-[#d4a853]'}`}>
                                                         {i + 1}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
@@ -607,7 +607,7 @@ export const InterrailPlanner = () => {
                                             <div className="flex gap-1.5">
                                                 <button
                                                     onClick={() => setShowStationPicker(true)}
-                                                    className="flex-1 py-2 border border-dashed border-white/10 rounded-xl text-xs text-gray-500 hover:border-indigo-500/30 hover:text-indigo-400 transition-colors flex items-center justify-center gap-1.5"
+                                                    className="flex-1 py-2 border border-dashed border-white/10 rounded-xl text-xs text-gray-500 hover:border-[#d4a853]/30 hover:text-[#d4a853] transition-colors flex items-center justify-center gap-1.5"
                                                 >
                                                     <Plus size={12} /> Añadir
                                                 </button>
@@ -651,7 +651,7 @@ export const InterrailPlanner = () => {
                                                                 <div className="flex items-center gap-1.5 flex-shrink-0">
                                                                     <button
                                                                         onClick={() => addStation(s.station.id)}
-                                                                        className="px-2.5 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 text-[10px] font-bold hover:bg-indigo-500/25 transition-colors border border-indigo-500/20"
+                                                                        className="px-2.5 py-1.5 rounded-lg bg-[#d4a853]/15 text-[#d4a853] text-[10px] font-bold hover:bg-[#d4a853]/25 transition-colors border border-[#d4a853]/20"
                                                                     >
                                                                         <Plus size={10} className="inline mr-0.5" /> Añadir
                                                                     </button>
@@ -686,7 +686,7 @@ export const InterrailPlanner = () => {
                                 {/* ═══ CONFIG ═══ */}
                                 <div className="glass-card p-4">
                                     <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5">
-                                        <Calendar size={14} className="text-indigo-400" /> Configuración
+                                        <Calendar size={14} className="text-[#d4a853]" /> Configuración
                                     </h3>
 
                                     <div className="mb-3">
@@ -697,11 +697,11 @@ export const InterrailPlanner = () => {
                                     <div className="mb-3">
                                         <label className="text-[10px] text-gray-500 mb-1 flex items-center justify-between">
                                             <span>Duración total</span>
-                                            <span className="text-indigo-400 font-bold">{totalDays} días</span>
+                                            <span className="text-[#d4a853] font-bold">{totalDays} días</span>
                                         </label>
                                         <div className="flex items-center gap-2">
                                             <button onClick={() => setTotalDays(Math.max(selectedStationIds.length, totalDays - 1))} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><Minus size={12} /></button>
-                                            <input type="range" min={selectedStationIds.length} max={60} value={totalDays} onChange={e => setTotalDays(Number(e.target.value))} className="flex-1 accent-indigo-500" />
+                                            <input type="range" min={selectedStationIds.length} max={60} value={totalDays} onChange={e => setTotalDays(Number(e.target.value))} className="flex-1 accent-[#d4a853]" />
                                             <button onClick={() => setTotalDays(Math.min(60, totalDays + 1))} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"><Plus size={12} /></button>
                                         </div>
                                     </div>
@@ -714,10 +714,10 @@ export const InterrailPlanner = () => {
                                                 <button
                                                     key={preset.id}
                                                     onClick={() => { setActivePreset(preset.id); setResult(null); }}
-                                                    className={`px-2.5 py-2 rounded-xl text-[10px] font-semibold flex flex-col items-start transition-all ${activePreset === preset.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+                                                    className={`px-2.5 py-2 rounded-xl text-[10px] font-semibold flex flex-col items-start transition-all ${activePreset === preset.id ? 'bg-[#d4a853] text-[#0a0f1c] shadow-lg shadow-[#d4a853]/20' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                                                 >
                                                     <span className="flex items-center gap-1">{preset.icon} {preset.label}</span>
-                                                    <span className={`text-[8px] mt-0.5 ${activePreset === preset.id ? 'text-indigo-200' : 'text-gray-600'}`}>{preset.desc}</span>
+                                                    <span className={`text-[8px] mt-0.5 ${activePreset === preset.id ? 'text-[#0a0f1c]/70' : 'text-gray-600'}`}>{preset.desc}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -735,8 +735,8 @@ export const InterrailPlanner = () => {
                                                     {(['price', 'duration', 'transfers'] as const).map(key => (
                                                         <div key={key} className="flex items-center gap-2">
                                                             <span className="text-[10px] text-gray-500 w-16">{key === 'price' ? 'Precio' : key === 'duration' ? 'Duración' : 'Transb.'}</span>
-                                                            <input type="range" min={0} max={100} value={Math.round(currentWeights[key] * 100)} onChange={e => { setActivePreset('custom'); setCustomWeights(prev => ({ ...prev, [key]: Number(e.target.value) / 100 })); setResult(null); }} className="flex-1 accent-indigo-500" />
-                                                            <span className="text-[10px] text-indigo-400 font-mono w-6 text-right">{(currentWeights[key] * 100).toFixed(0)}%</span>
+                                                            <input type="range" min={0} max={100} value={Math.round(currentWeights[key] * 100)} onChange={e => { setActivePreset('custom'); setCustomWeights(prev => ({ ...prev, [key]: Number(e.target.value) / 100 })); setResult(null); }} className="flex-1 accent-[#d4a853]" />
+                                                            <span className="text-[10px] text-[#d4a853] font-mono w-6 text-right">{(currentWeights[key] * 100).toFixed(0)}%</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -760,7 +760,7 @@ export const InterrailPlanner = () => {
                                 {/* Tips Panel */}
                                 <div className="mt-2">
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3 flex items-center gap-2">
-                                        <Sparkles size={12} className="text-indigo-400" /> Asistente de Viaje
+                                        <Sparkles size={12} className="text-[#d4a853]" /> Asistente de Viaje
                                     </h3>
                                     <TipsAIPanel stationIds={selectedStationIds} totalDays={totalDays} />
                                 </div>
@@ -768,7 +768,7 @@ export const InterrailPlanner = () => {
                                 <button
                                     onClick={optimize}
                                     disabled={selectedStationIds.length < 2}
-                                    className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed rounded-2xl font-bold text-sm flex items-center justify-center gap-2.5 transition-colors shadow-lg shadow-indigo-500/20"
+                                    className="w-full py-3.5 bg-[#c9973f] hover:bg-[#d4a853] disabled:opacity-30 disabled:cursor-not-allowed rounded-2xl font-bold text-sm flex items-center justify-center gap-2.5 transition-colors shadow-lg shadow-[#d4a853]/20"
                                 >
                                     <Play size={18} fill="currentColor" /> Optimizar Ruta
                                 </button>
@@ -783,7 +783,7 @@ export const InterrailPlanner = () => {
                                             <StatCard label="Precio" value={`${result.totalPrice}€`} icon={<Euro size={14} />} color="text-green-400" />
                                             <StatCard label="Duración" value={formatMinutes(result.totalDurationMin)} icon={<Clock size={14} />} color="text-blue-400" />
                                             <StatCard label="Eco-Score" value={`-${Math.round(result.totalDurationMin * 0.12)}kg CO2`} icon={<Leaf size={14} />} color="text-emerald-400" tooltip="Ahorro vs Avión" />
-                                            <StatCard label="Score" value={result.score.toFixed(2)} icon={<Sparkles size={14} />} color="text-indigo-400" />
+                                            <StatCard label="Score" value={result.score.toFixed(2)} icon={<Sparkles size={14} />} color="text-[#d4a853]" />
                                         </div>
 
                                         <MoodTags stops={selectedStationIds} legs={result.legs} />
@@ -814,7 +814,7 @@ export const InterrailPlanner = () => {
                                         {/* Timeline */}
                                         <div className="glass-card p-4">
                                             <h3 className="font-bold text-sm mb-4 flex items-center gap-1.5">
-                                                <RouteIcon size={14} className="text-indigo-400" /> Itinerario
+                                                <RouteIcon size={14} className="text-[#d4a853]" /> Itinerario
                                             </h3>
                                             <div className="space-y-0">
                                                 {selectedStationIds.map((id, i) => {
@@ -828,8 +828,8 @@ export const InterrailPlanner = () => {
                                                         <div key={id + i}>
                                                             <div className="flex gap-3">
                                                                 <div className="flex flex-col items-center">
-                                                                    <div className={`w-3 h-3 rounded-full border-2 relative z-10 ${i === 0 ? 'bg-green-500 border-green-400' : i === selectedStationIds.length - 1 ? 'bg-red-500 border-red-400' : 'bg-indigo-500 border-indigo-400'}`} />
-                                                                    {i < selectedStationIds.length - 1 && <div className="w-0.5 flex-1 bg-gradient-to-b from-indigo-500/30 to-transparent min-h-[40px]" />}
+                                                                    <div className={`w-3 h-3 rounded-full border-2 relative z-10 ${i === 0 ? 'bg-green-500 border-green-400' : i === selectedStationIds.length - 1 ? 'bg-red-500 border-red-400' : 'bg-[#d4a853] border-[#d4a853]'}`} />
+                                                                    {i < selectedStationIds.length - 1 && <div className="w-0.5 flex-1 bg-gradient-to-b from-[#d4a853]/30 to-transparent min-h-[40px]" />}
                                                                 </div>
                                                                 <div className="pb-1.5 flex-1">
                                                                     <div className="flex items-center justify-between">
@@ -838,7 +838,7 @@ export const InterrailPlanner = () => {
                                                                             <div className="text-[9px] text-gray-600">{station?.country}</div>
                                                                         </div>
                                                                         <div className="text-right">
-                                                                            <div className="text-xs font-semibold text-indigo-400">{stayDays}d</div>
+                                                                            <div className="text-xs font-semibold text-[#d4a853]">{stayDays}d</div>
                                                                             <div className="text-[9px] text-gray-600">
                                                                                 {format(dateStart, 'd MMM', { locale: es })}
                                                                                 {stayDays > 1 && (() => {
@@ -869,7 +869,7 @@ export const InterrailPlanner = () => {
                                                                                 const officialOp = getOfficialLinkByCountry(leg.from.country);
                                                                                 return (
                                                                                     <div key={li} className={`flex items-center gap-2 ${li > 0 ? 'mt-1.5 pt-1.5 border-t border-white/5' : ''}`}>
-                                                                                        <ArrowRight size={10} className="text-indigo-400 flex-shrink-0" />
+                                                                                        <ArrowRight size={10} className="text-[#d4a853] flex-shrink-0" />
                                                                                         <div className="flex-1 min-w-0">
                                                                                             <div className="text-[10px] font-medium truncate">{leg.from.city} → {leg.to.city}</div>
                                                                                             <div className="text-[8px] text-gray-600">
@@ -882,7 +882,7 @@ export const InterrailPlanner = () => {
                                                                                             </div>
                                                                                         </div>
                                                                                         <div className="flex items-center gap-2">
-                                                                                            <div className="text-[10px] font-bold text-indigo-400">{leg.route.price ?? 0}€</div>
+                                                                                            <div className="text-[10px] font-bold text-[#d4a853]">{leg.route.price ?? 0}€</div>
                                                                                             {officialOp ? (
                                                                                                 <button 
                                                                                                     onClick={() => window.open(officialOp.url, '_blank')}
@@ -913,7 +913,7 @@ export const InterrailPlanner = () => {
                                             <div className="glass-card p-4">
                                                 <button onClick={() => setShowAlternatives(!showAlternatives)} className="w-full flex items-center justify-between">
                                                     <h3 className="font-bold text-sm flex items-center gap-1.5">
-                                                        <Sparkles size={14} className="text-indigo-400" /> {alternatives.length} Alternativas
+                                                        <Sparkles size={14} className="text-[#d4a853]" /> {alternatives.length} Alternativas
                                                     </h3>
                                                     {showAlternatives ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                                                 </button>
@@ -924,7 +924,7 @@ export const InterrailPlanner = () => {
                                                                 <div
                                                                     key={i}
                                                                     onClick={() => setResult(alt)}
-                                                                    className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-colors text-xs ${alt === result ? 'bg-indigo-500/10 border border-indigo-500/20' : 'bg-white/[0.03] border border-white/5 hover:bg-white/5'}`}
+                                                                    className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-colors text-xs ${alt === result ? 'bg-[#d4a853]/10 border border-[#d4a853]/20' : 'bg-white/[0.03] border border-white/5 hover:bg-white/5'}`}
                                                                 >
                                                                     <div className="flex items-center gap-2">
                                                                         <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-500'}`}>#{i + 1}</div>

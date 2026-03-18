@@ -41,7 +41,7 @@ export const Map3D = () => {
                     >
                         <div className="p-6 border-b border-white/5 flex items-center justify-between">
                             <h2 className="text-xl font-bold flex items-center gap-2">
-                                <Info className="text-indigo-400" size={20} />
+                                <Info className="text-[#d4a853]" size={20} />
                                 Resumen del Viaje
                             </h2>
                             <div className="flex gap-2">
@@ -67,7 +67,7 @@ export const Map3D = () => {
                         <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
                             {/* Header Info */}
                             <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 shadow-inner">
-                                <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                <div className="w-12 h-12 rounded-xl bg-[#d4a853]/20 flex items-center justify-center text-[#d4a853]">
                                     <Train size={24} />
                                 </div>
                                 <div className="flex-1">
@@ -76,7 +76,7 @@ export const Map3D = () => {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-lg font-black text-white">{activeRoute.price != null ? `${activeRoute.price} €` : 'N/A'}</div>
-                                    <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Tarifa Base</div>
+                                    <div className="text-[10px] text-[#d4a853] font-bold uppercase tracking-wider">Tarifa Base</div>
                                 </div>
                             </div>
 
@@ -88,18 +88,18 @@ export const Map3D = () => {
                                 </h3>
 
                                 <div className="relative pl-8">
-                                    <div className="absolute left-[11px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)]" />
+                                    <div className="absolute left-[11px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-[#d4a853] via-[#d4a853]/50 to-[#d4a853] shadow-[0_0_10px_rgba(212,168,83,0.3)]" />
 
                                     <div className="space-y-10">
                                         {/* Departure Point */}
                                         <div className="relative">
-                                            <div className="absolute -left-[27px] w-5 h-5 rounded-full bg-indigo-500 border-4 border-[#0a0a0c] z-10 shadow-[0_0_15px_rgba(99,102,241,0.6)]" />
+                                            <div className="absolute -left-[27px] w-5 h-5 rounded-full bg-[#d4a853] border-4 border-[#0a0a0c] z-10 shadow-[0_0_15px_rgba(212,168,83,0.6)]" />
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <div className="text-sm font-black text-white">{activeRoute.fromStationName ?? activeRoute.fromStationId}</div>
                                                     <div className="text-[10px] text-gray-400 uppercase font-bold mt-1">Salida · Andén {activeRoute.platform || '--'}</div>
                                                 </div>
-                                                <div className="text-sm font-black text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded-md border border-indigo-400/20">
+                                                <div className="text-sm font-black text-[#d4a853] bg-[#d4a853]/10 px-2 py-1 rounded-md border border-[#d4a853]/20">
                                                     {format(new Date(activeRoute.departureTime), 'HH:mm')}
                                                 </div>
                                             </div>
@@ -109,7 +109,7 @@ export const Map3D = () => {
                                         {activeRoute.stops && activeRoute.stops.length > 0 ? (
                                             activeRoute.stops.map((stop, idx) => (
                                                 <div key={idx} className="relative group">
-                                                    <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-indigo-500/40 border-2 border-[#0a0a0c] z-10 group-hover:bg-indigo-400 transition-colors" />
+                                                    <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-[#d4a853]/40 border-2 border-[#0a0a0c] z-10 group-hover:bg-[#d4a853] transition-colors" />
                                                     <div className="flex justify-between items-center opacity-70 group-hover:opacity-100 transition-opacity">
                                                         <div className="text-xs text-gray-300 font-medium">{stop.stationName}</div>
                                                         <div className="text-[11px] font-bold text-gray-500">

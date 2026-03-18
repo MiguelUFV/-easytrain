@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Fragment, useEffect, useState, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Polyline, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -524,15 +524,22 @@ export const EuropeMap = ({
                     const isDimmed = connectionMode && !isConnectedRoute && !isInChain && !isActive;
 
                     return (
-                        <NeonRoute
-                            key={route.id}
-                            path={path}
-                            color={color}
-                            isActive={isActive}
-                            isFerry={route.type === 'Ferry'}
-                            isDimmed={isDimmed}
-                            isConnected={isConnectedRoute}
-                        />
+                        <Fragment key={route.id}>
+                            <NeonRoute
+                                path={path}
+                                color={color}
+                                isActive={isActive}
+                                isFerry={route.type === 'Ferry'}
+                                isDimmed={isDimmed}
+                                isConnected={isConnectedRoute}
+                            />
+                            {/* Invisible fat clickable hitbox on top */}
+                            <Polyline
+                                positions={path}
+                                pathOptions={{ color: 'transparent', weight: 15, opacity: 0 }}
+                                eventHandlers={{ click: () => setSelectedRouteId(route.id) }}
+                            />
+                        </Fragment>
                     );
                 })}
 

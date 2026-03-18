@@ -103,25 +103,64 @@ const MovingTrain = ({ path, color, duration = 10, isFerry = false }: { path: [n
     );
 };
 
-const NeonRoute = ({ path, color, isActive, isInterrail = false, isFerry = false }: { 
-    path: [number, number][], 
-    color: string, 
+const NeonRoute = ({ path, color, isActive, isInterrail = false, isFerry = false, isDimmed = false, isConnected = false, isChainLeg = false }: {
+    path: [number, number][],
+    color: string,
     isActive?: boolean,
     isInterrail?: boolean,
-    isFerry?: boolean
+    isFerry?: boolean,
+    isDimmed?: boolean,
+    isConnected?: boolean,
+    isChainLeg?: boolean,
 }) => {
+    // Dimmed routes in connection mode
+    if (isDimmed) {
+        return (
+            <Polyline
+                positions={path}
+                pathOptions={{ color, weight: 0.8, opacity: 0.05, lineCap: 'round', lineJoin: 'round' }}
+            />
+        );
+    }
+
+    // Connected routes pulse in gold
+    if (isConnected) {
+        return (
+            <>
+                <Polyline positions={path} pathOptions={{ color: '#d4a853', weight: 18, opacity: 0.08, lineCap: 'round', className: 'connected-pulse' }} />
+                <Polyline positions={path} pathOptions={{ color: '#d4a853', weight: 8, opacity: 0.2, lineCap: 'round', className: 'connected-pulse' }} />
+                <Polyline positions={path} pathOptions={{ color: '#d4a853', weight: 3, opacity: 0.8, lineCap: 'round', lineJoin: 'round' }} />
+                <Polyline positions={path} pathOptions={{ color: '#fff', weight: 1.5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} />
+            </>
+        );
+    }
+
+    // Express chain legs — thick gold neon
+    if (isChainLeg) {
+        return (
+            <>
+                <Polyline positions={path} pathOptions={{ color: '#d4a853', weight: 30, opacity: 0.06, lineCap: 'round' }} />
+                <Polyline positions={path} pathOptions={{ color: '#d4a853', weight: 16, opacity: 0.15, lineCap: 'round' }} />
+                <Polyline positions={path} pathOptions={{ color: '#d4a853', weight: 6, opacity: 0.5, lineCap: 'round' }} />
+                <Polyline positions={path} pathOptions={{ color: '#fff', weight: 2, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }} />
+                <Polyline positions={path} pathOptions={{ color: '#d4a853', weight: 4, opacity: 1, lineCap: 'round', lineJoin: 'round' }} />
+                <MovingTrain path={path} color="#d4a853" duration={8} />
+            </>
+        );
+    }
+
     if (!isActive && !isInterrail) {
         return (
-            <Polyline 
-                positions={path} 
-                pathOptions={{ 
-                    color, 
-                    weight: 1.2, 
-                    opacity: 0.2, 
-                    lineCap: 'round', 
+            <Polyline
+                positions={path}
+                pathOptions={{
+                    color,
+                    weight: 1.2,
+                    opacity: 0.2,
+                    lineCap: 'round',
                     lineJoin: 'round',
                     dashArray: isFerry ? '4, 8' : undefined
-                }} 
+                }}
             />
         );
     }
@@ -137,7 +176,7 @@ const NeonRoute = ({ path, color, isActive, isInterrail = false, isFerry = false
             {/* Core neon line */}
             <Polyline positions={path} pathOptions={{ color: '#fff', weight: isActive ? 2.5 : 1.5, opacity: 0.95, lineCap: 'round', lineJoin: 'round', dashArray: isFerry ? '3, 6' : undefined }} />
             <Polyline positions={path} pathOptions={{ color, weight: isActive ? 4.5 : 2.5, opacity: 1, lineCap: 'round', lineJoin: 'round', dashArray: isFerry ? '3, 6' : undefined }} />
-            
+
             {/* Moving Train Pulse */}
             <MovingTrain path={path} color={color} duration={isInterrail ? 15 : 6} isFerry={isFerry} />
         </>
@@ -298,10 +337,16 @@ type FilterType = 'all' | 'HighSpeed' | 'Intercity' | 'Regional' | 'NightTrain';
 export const EuropeMap = ({
     plannerMode = false,
     onStationClick,
-    onOptimize
+    onOptimize,
+    connectionMode = false,
+    connectedRouteIds = new Set(),
+    expressChain = [],
 }: {
     plannerMode?: boolean;
     onStationClick?: (stationId: string) => void;
+    connectionMode?: boolean;
+    connectedRouteIds?: Set<string>;
+    expressChain?: Route[];
     onOptimize?: () => void;
 }) => {
     const {
@@ -412,6 +457,60 @@ export const EuropeMap = ({
                 <FitToActiveRoute activeRoute={activeRoute} allStations={allStations} />
                 <FitToInterrailRoute stationIds={interrailStops.map(s => s.stationId)} allStations={allStations} trigger={fitTrigger} />
 
+                {/* Express chain leg lines */}
+                {expressChain.map((leg, idx) => {
+                    const from = allStations.find(s => s.id === leg.fromStationId);
+                    const to = allStations.find(s => s.id === leg.toStationId);
+                    if (!from?.coordinates || !to?.coordinates) return null;
+                    const path = getCurvedPath(from, to);
+                    return (
+                        <NeonRoute key={`chain-${leg.id}-${idx}`} path={path} color="#d4a853" isChainLeg />
+                    );
+                })}
+
+                {/* Express chain numbered markers */}
+                {expressChain.length > 0 && (() => {
+                    const chainStationIds: string[] = [expressChain[0].fromStationId];
+                    expressChain.forEach(leg => chainStationIds.push(leg.toStationId));
+                    return chainStationIds.map((sid, idx) => {
+                        const station = allStations.find(s => s.id === sid);
+                        if (!station?.coordinates) return null;
+                        const isFirst = idx === 0;
+                        const isLast = idx === chainStationIds.length - 1;
+                        return (
+                            <CircleMarker
+                                key={`chain-marker-${sid}-${idx}`}
+                                center={[station.coordinates.lat, station.coordinates.lng]}
+                                radius={isFirst || isLast ? 11 : 8}
+                                pathOptions={{
+                                    color: isFirst ? '#d4a853' : isLast ? '#22c55e' : '#d4a853',
+                                    fillColor: isFirst ? '#78350f' : isLast ? '#14532d' : '#451a03',
+                                    fillOpacity: 1,
+                                    weight: 3,
+                                }}
+                            >
+                                <Tooltip direction="top" offset={[0, -12]} permanent className="station-tooltip">
+                                    <div style={{
+                                        background: '#0f172a', color: 'white', padding: '5px 8px', borderRadius: '8px',
+                                        border: `1px solid ${isFirst ? '#d4a85350' : isLast ? '#22c55e50' : '#d4a85330'}`,
+                                        fontFamily: 'Inter, system-ui, sans-serif', boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                                    }}>
+                                        <div style={{ fontWeight: 800, fontSize: '11px' }}>
+                                            <span style={{ color: isFirst ? '#d4a853' : isLast ? '#4ade80' : '#d4a853', marginRight: '4px' }}>
+                                                {idx + 1}.
+                                            </span>
+                                            {station.city}
+                                        </div>
+                                        <div style={{ fontSize: '9px', color: isFirst ? '#d4a853' : isLast ? '#4ade80' : '#d4a853', fontWeight: 700, marginTop: '1px' }}>
+                                            {isFirst ? 'INICIO' : isLast ? 'DESTINO FINAL' : `CONEXIÓN`}
+                                        </div>
+                                    </div>
+                                </Tooltip>
+                            </CircleMarker>
+                        );
+                    });
+                })()}
+
                 {/* Route lines */}
                 {filteredRoutes.map(route => {
                     const from = allStations.find(s => s.id === route.fromStationId);
@@ -420,14 +519,19 @@ export const EuropeMap = ({
                     const isActive = activeRoute?.id === route.id;
                     const color = getTypeColor(route.type);
                     const path = getCurvedPath(from, to);
+                    const isInChain = expressChain.some(c => c.id === route.id);
+                    const isConnectedRoute = connectedRouteIds.has(route.id);
+                    const isDimmed = connectionMode && !isConnectedRoute && !isInChain && !isActive;
 
                     return (
-                        <NeonRoute 
+                        <NeonRoute
                             key={route.id}
                             path={path}
                             color={color}
                             isActive={isActive}
                             isFerry={route.type === 'Ferry'}
+                            isDimmed={isDimmed}
+                            isConnected={isConnectedRoute}
                         />
                     );
                 })}
@@ -1040,6 +1144,12 @@ export const EuropeMap = ({
                     50% { filter: drop-shadow(0 0 8px #fff); }
                 }
                 .train-pulse { animation: train-pulse-anim 1s ease-in-out infinite; }
+
+                @keyframes connected-pulse-anim {
+                    0%, 100% { opacity: 0.6; }
+                    50% { opacity: 1; }
+                }
+                .connected-pulse { animation: connected-pulse-anim 1.5s ease-in-out infinite; }
             `}</style>
         </div>
     );

@@ -68,6 +68,7 @@ export const PWAInstallPrompt = () => {
                     >
                         <button
                             onClick={handleDismiss}
+                            aria-label="Cerrar"
                             className="absolute top-3 right-3 p-1 text-gray-500 hover:text-white transition-colors"
                         >
                             <X size={16} />

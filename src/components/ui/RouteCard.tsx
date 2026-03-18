@@ -106,6 +106,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                             if (!wasFavorite) analytics.addFavorite(route.id);
                             addToast(wasFavorite ? 'Eliminado de favoritos' : 'Añadido a favoritos', wasFavorite ? 'info' : 'success');
                         }}
+                        aria-label={isFavorite ? 'Eliminar de favoritos' : 'Añadir a favoritos'}
                         className={`p-2 rounded-xl transition-all ${
                             isFavorite ? 'text-red-400 bg-red-400/10 border border-red-400/15' : 'text-gray-600 hover:bg-white/5 hover:text-gray-300 border border-transparent'
                         }`}

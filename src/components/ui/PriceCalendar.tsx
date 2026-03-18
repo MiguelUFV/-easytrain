@@ -69,12 +69,14 @@ export const PriceCalendar = ({ toName, fromId, toId, onSelectDate, selectedDate
                     <button
                         onClick={() => setWeekOffset(w => w - 1)}
                         disabled={weekOffset <= 0}
+                        aria-label="Semana anterior"
                         className="p-1 rounded-md hover:bg-white/5 text-gray-500 hover:text-white transition-all disabled:opacity-20"
                     >
                         <ChevronLeft size={14} />
                     </button>
                     <button
                         onClick={() => setWeekOffset(w => w + 1)}
+                        aria-label="Semana siguiente"
                         className="p-1 rounded-md hover:bg-white/5 text-gray-500 hover:text-white transition-all"
                     >
                         <ChevronRight size={14} />

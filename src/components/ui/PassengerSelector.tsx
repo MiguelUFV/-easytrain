@@ -102,6 +102,7 @@ const Counter = ({ label, description, count, onIncrement, onDecrement, min = 0 
       <button
         onClick={onDecrement}
         disabled={count <= min}
+        aria-label={`Reducir ${label}`}
         className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 transition-colors"
       >
         <Minus size={14} />
@@ -109,6 +110,7 @@ const Counter = ({ label, description, count, onIncrement, onDecrement, min = 0 
       <span className="w-4 text-center text-sm font-bold text-white">{count}</span>
       <button
         onClick={onIncrement}
+        aria-label={`Aumentar ${label}`}
         className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
       >
         <Plus size={14} />

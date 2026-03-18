@@ -32,7 +32,7 @@ const MiniStationSearch = ({ placeholder, onSelect }: { placeholder: string; onS
                         <button
                             key={s.id}
                             onClick={() => { onSelect(s); setQuery(s.name); setResults([]); }}
-                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-500/10 transition-colors border-b border-white/5 last:border-0"
+                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-[#d4a853]/10 transition-colors border-b border-white/5 last:border-0"
                         >
                             <div className="font-semibold text-white">{s.name}</div>
                             <div className="text-xs text-gray-500">{s.country}</div>
@@ -71,7 +71,7 @@ export const PriceAlertsPage = () => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-8 md:p-10 overflow-y-auto">
             <header className="flex justify-between items-start mb-10">
                 <div>
-                    <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Notificaciones</div>
+                    <div className="text-xs font-bold text-[#d4a853] uppercase tracking-widest mb-1">Notificaciones</div>
                     <h1 className="text-3xl font-black tracking-tight">Alertas de Precio</h1>
                     <p className="text-[var(--text-muted)] text-sm mt-1.5">
                         Te avisaremos cuando el precio baje del umbral que elijas.
@@ -145,7 +145,7 @@ export const PriceAlertsPage = () => {
                             className={`glass-card p-5 flex items-center justify-between gap-4 ${alert.triggered ? 'border-green-500/30' : 'border-white/5'}`}
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${alert.triggered ? 'bg-green-500/15 text-green-400' : 'bg-indigo-500/15 text-indigo-400'}`}>
+                                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${alert.triggered ? 'bg-green-500/15 text-green-400' : 'bg-[#d4a853]/15 text-[#d4a853]'}`}>
                                     {alert.triggered ? <CheckCircle size={22} /> : <TrendingDown size={22} />}
                                 </div>
                                 <div>
@@ -158,7 +158,7 @@ export const PriceAlertsPage = () => {
                                         )}
                                     </div>
                                     <div className="text-xs text-[var(--text-muted)] mt-0.5">
-                                        Objetivo: <span className="text-indigo-400 font-bold">{alert.targetPrice} €</span> · Creada {new Date(alert.createdAt).toLocaleDateString('es-ES')}
+                                        Objetivo: <span className="text-[#d4a853] font-bold">{alert.targetPrice} €</span> · Creada {new Date(alert.createdAt).toLocaleDateString('es-ES')}
                                     </div>
                                 </div>
                             </div>

@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
                             this.setState({ hasError: false, error: undefined });
                             window.location.reload();
                         }}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#c9973f] hover:bg-[#d4a853] text-[#0a0f1c] font-bold rounded-2xl transition-all"
                     >
                         <RefreshCw size={16} />
                         Recargar aplicación

@@ -23,15 +23,15 @@ const TicketCard = ({ ticket, index }: { ticket: any, index: number }) => {
             >
                 {/* Front Side */}
                 <div className="absolute inset-0 backface-hidden">
-                    <div className="glass-card h-full w-full flex flex-col lg:flex-row overflow-hidden border-indigo-500/20 shadow-xl shadow-indigo-500/5 hover:border-indigo-500/40 transition-colors">
+                    <div className="glass-card h-full w-full flex flex-col lg:flex-row overflow-hidden border-[#d4a853]/20 shadow-xl shadow-[#d4a853]/5 hover:border-[#d4a853]/40 transition-colors">
                         <div className="flex-1 p-6 flex flex-col justify-between">
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-                                        <Train className="text-indigo-400" size={16} />
+                                    <div className="w-8 h-8 rounded-lg bg-[#d4a853]/10 flex items-center justify-center border border-[#d4a853]/20">
+                                        <Train className="text-[#d4a853]" size={16} />
                                     </div>
                                     <div>
-                                        <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none">{ticket.operator}</div>
+                                        <div className="text-[10px] font-black text-[#d4a853] uppercase tracking-widest leading-none">{ticket.operator}</div>
                                         <div className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-1 italic opacity-60">#{ticket.id}</div>
                                     </div>
                                 </div>
@@ -66,29 +66,29 @@ const TicketCard = ({ ticket, index }: { ticket: any, index: number }) => {
                                 <div className="flex-1">
                                     <div className="text-[9px] text-gray-500 font-black uppercase tracking-widest opacity-40 mb-1">Dpto.</div>
                                     <div className="text-lg font-black text-white truncate">{ticket.from}</div>
-                                    <div className="text-xl font-black text-indigo-400 mt-0.5">{ticket.departure}</div>
+                                    <div className="text-xl font-black text-[#d4a853] mt-0.5">{ticket.departure}</div>
                                 </div>
 
                                 <div className="flex flex-col items-center gap-1 opacity-20">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                    <div className="h-4 w-px bg-gradient-to-b from-indigo-500 to-transparent" />
-                                    <ArrowRight size={14} className="text-indigo-400" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#d4a853]" />
+                                    <div className="h-4 w-px bg-gradient-to-b from-[#d4a853] to-transparent" />
+                                    <ArrowRight size={14} className="text-[#d4a853]" />
                                 </div>
 
                                 <div className="flex-1 text-right">
                                     <div className="text-[9px] text-gray-500 font-black uppercase tracking-widest opacity-40 mb-1">Arr.</div>
                                     <div className="text-lg font-black text-white truncate">{ticket.to}</div>
-                                    <div className="text-xl font-black text-indigo-400 mt-0.5">{ticket.arrival}</div>
+                                    <div className="text-xl font-black text-[#d4a853] mt-0.5">{ticket.arrival}</div>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-6 mt-2 pt-3 border-t border-white/5">
                                 <div className="flex items-center gap-2">
-                                    <Calendar size={12} className="text-indigo-400/60" />
+                                    <Calendar size={12} className="text-[#d4a853]/60" />
                                     <span className="text-[10px] font-bold text-gray-300">{ticket.date}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <MapPin size={12} className="text-indigo-400/60" />
+                                    <MapPin size={12} className="text-[#d4a853]/60" />
                                     <span className="text-[10px] font-bold text-gray-300">{ticket.seat}</span>
                                 </div>
                             </div>
@@ -101,27 +101,27 @@ const TicketCard = ({ ticket, index }: { ticket: any, index: number }) => {
                             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-[#0a0a0c] -mb-3 border border-white/5" />
                         </div>
 
-                        <div className="w-full lg:w-44 bg-white/[0.04] p-6 flex flex-col items-center justify-center gap-3 border-t lg:border-t-0 lg:border-l border-white/5 group-hover:bg-indigo-500/10 transition-colors">
+                        <div className="w-full lg:w-44 bg-white/[0.04] p-6 flex flex-col items-center justify-center gap-3 border-t lg:border-t-0 lg:border-l border-white/5 group-hover:bg-[#d4a853]/10 transition-colors">
                             <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Click para info</div>
                             <div className="relative">
-                                <QrCode size={72} className="text-indigo-400 opacity-60 group-hover:opacity-100 transition-opacity" />
-                                <div className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <QrCode size={72} className="text-[#d4a853] opacity-60 group-hover:opacity-100 transition-opacity" />
+                                <div className="absolute inset-0 bg-[#d4a853]/10 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <div className="text-[9px] font-black text-indigo-300/60 uppercase tracking-widest">{ticket.price} EUR</div>
+                            <div className="text-[9px] font-black text-[#0a0f1c]/60 uppercase tracking-widest">{ticket.price} EUR</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Back Side */}
                 <div className="absolute inset-0 backface-hidden rotate-y-180">
-                    <div className="glass-card h-full w-full bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-900 border-indigo-400/30 p-8 flex flex-col justify-between items-center text-center shadow-2xl shadow-indigo-500/20">
+                    <div className="glass-card h-full w-full bg-gradient-to-br from-[#d4a853] via-[#f0c674] to-[#c9973f] border-[#d4a853]/30 p-8 flex flex-col justify-between items-center text-center shadow-2xl shadow-[#d4a853]/20">
                         <div className="w-full flex justify-between items-start border-b border-white/10 pb-4">
                             <div className="flex items-center gap-2">
                                 <div className="p-2 rounded-lg bg-white/10">
                                     <Train size={16} className="text-white" />
                                 </div>
                                 <div className="text-left">
-                                    <div className="text-[8px] font-black text-indigo-200 uppercase tracking-widest">EasyTrain Pass</div>
+                                    <div className="text-[8px] font-black text-[#0a0f1c] uppercase tracking-widest">EasyTrain Pass</div>
                                     <div className="text-[10px] font-black text-white">Socio #8829-X</div>
                                 </div>
                             </div>
@@ -134,11 +134,11 @@ const TicketCard = ({ ticket, index }: { ticket: any, index: number }) => {
                             </div>
                             <div className="flex-1 flex flex-col justify-center items-end gap-3 text-right">
                                 <div>
-                                    <div className="text-[8px] font-black text-indigo-300 uppercase tracking-widest">WIFI A BORDO</div>
+                                    <div className="text-[8px] font-black text-[#0a0f1c] uppercase tracking-widest">WIFI A BORDO</div>
                                     <div className="text-sm font-black text-white">RED: EasyTrain_Free</div>
                                 </div>
                                 <div>
-                                    <div className="text-[8px] font-black text-indigo-300 uppercase tracking-widest">PLATAFORMA</div>
+                                    <div className="text-[8px] font-black text-[#0a0f1c] uppercase tracking-widest">PLATAFORMA</div>
                                     <div className="text-xl font-black text-white">Vía 12</div>
                                 </div>
                             </div>
@@ -146,18 +146,18 @@ const TicketCard = ({ ticket, index }: { ticket: any, index: number }) => {
 
                         <div className="w-full flex justify-around gap-4 pt-4 border-t border-white/10">
                             <div className="flex flex-col items-center">
-                                <Info size={14} className="text-indigo-300 mb-1" />
-                                <div className="text-[8px] font-black text-indigo-200/50 tracking-widest">REQUISITOS</div>
+                                <Info size={14} className="text-[#0a0f1c] mb-1" />
+                                <div className="text-[8px] font-black text-[#0a0f1c]/50 tracking-widest">REQUISITOS</div>
                                 <div className="text-xs font-bold text-white uppercase">DNI Requerido</div>
                             </div>
                             <div className="flex flex-col items-center">
-                                <Clock size={14} className="text-indigo-300 mb-1" />
-                                <div className="text-[8px] font-black text-indigo-200/50 tracking-widest">EMBARQUE</div>
+                                <Clock size={14} className="text-[#0a0f1c] mb-1" />
+                                <div className="text-[8px] font-black text-[#0a0f1c]/50 tracking-widest">EMBARQUE</div>
                                 <div className="text-xs font-bold text-white uppercase">15m antes</div>
                             </div>
                             <div className="flex flex-col items-center">
-                                <MapPin size={14} className="text-indigo-300 mb-1" />
-                                <div className="text-[8px] font-black text-indigo-200/50 tracking-widest">ZONA</div>
+                                <MapPin size={14} className="text-[#0a0f1c] mb-1" />
+                                <div className="text-[8px] font-black text-[#0a0f1c]/50 tracking-widest">ZONA</div>
                                 <div className="text-xs font-bold text-white uppercase">Coche {ticket.seat.split(',')[0].slice(-1)}</div>
                             </div>
                         </div>
@@ -208,11 +208,11 @@ export const TicketsPage = () => {
             className="flex-1 p-8 md:p-12 overflow-y-auto"
         >
             <header className="mb-12 relative">
-                <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full -z-10" />
-                <div className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-3">Tu Colección de Viajes</div>
+                <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#d4a853]/10 blur-[80px] rounded-full -z-10" />
+                <div className="text-[10px] font-black text-[#d4a853] uppercase tracking-[0.4em] mb-3">Tu Colección de Viajes</div>
                 <h1 className="text-4xl md:text-5xl font-black tracking-tighter flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                        <Ticket className="text-indigo-400" size={24} />
+                    <div className="w-12 h-12 rounded-2xl bg-[#d4a853]/10 border border-[#d4a853]/20 flex items-center justify-center">
+                        <Ticket className="text-[#d4a853]" size={24} />
                     </div>
                     Mis Billetes
                 </h1>
@@ -300,7 +300,7 @@ export const TicketsPage = () => {
                                         <Clock size={20} />
                                     </div>
                                     <div>
-                                        <div className="text-sm font-black text-white italic">{entry.fromName} <ArrowRight size={10} className="inline mx-1 text-indigo-400" /> {entry.toName}</div>
+                                        <div className="text-sm font-black text-white italic">{entry.fromName} <ArrowRight size={10} className="inline mx-1 text-[#d4a853]" /> {entry.toName}</div>
                                         <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Buscado · {safeDate(entry.timestamp)}</div>
                                     </div>
                                 </div>

@@ -16,7 +16,7 @@ export const Settings = () => {
             <div className="grid gap-6">
                 <section className="glass-card p-6">
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        <div className="w-16 h-16 rounded-full bg-[#d4a853]/20 flex items-center justify-center text-[#d4a853]">
                             <User size={32} />
                         </div>
                         <div>
@@ -54,7 +54,7 @@ interface SettingItemProps {
 const SettingItem = ({ icon, title, value }: SettingItemProps) => (
     <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
         <div className="flex items-center gap-3">
-            <div className="text-indigo-400">{icon}</div>
+            <div className="text-[#d4a853]">{icon}</div>
             <span className="font-semibold">{title}</span>
         </div>
         <span className="text-sm text-gray-400">{value}</span>
@@ -73,7 +73,7 @@ const ToggleItem = ({ icon, title, description, checked, onChange }: ToggleItemP
     return (
         <div className="flex items-start justify-between p-4 rounded-xl bg-white/5">
             <div className="flex gap-3">
-                <div className="text-indigo-400 mt-1">{icon}</div>
+                <div className="text-[#d4a853] mt-1">{icon}</div>
                 <div>
                     <div className="font-semibold">{title}</div>
                     <div className="text-xs text-gray-500 max-w-sm">{description}</div>
@@ -81,7 +81,7 @@ const ToggleItem = ({ icon, title, description, checked, onChange }: ToggleItemP
             </div>
             <button
                 onClick={() => onChange(!checked)}
-                className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${checked ? 'bg-indigo-500' : 'bg-gray-700'}`}
+                className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${checked ? 'bg-[#d4a853]' : 'bg-gray-700'}`}
                 aria-label={`${title}: ${checked ? 'activado' : 'desactivado'}`}
             >
                 <motion.div

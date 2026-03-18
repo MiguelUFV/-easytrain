@@ -29,10 +29,10 @@ export const RouteLanding = () => {
     if (!routeData) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <Train size={48} className="text-indigo-400 mb-4" />
+                <Train size={48} className="text-[#d4a853] mb-4" />
                 <h1 className="text-2xl font-black mb-2">Ruta no encontrada</h1>
                 <p className="text-gray-500 mb-6">Prueba buscando otra ruta en el dashboard.</p>
-                <Link to="/" className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">
+                <Link to="/" className="px-6 py-3 bg-[#c9973f] text-[#0a0f1c] font-bold rounded-xl hover:bg-[#a8842e] transition-colors">
                     Ir al Dashboard
                 </Link>
             </div>
@@ -51,7 +51,7 @@ export const RouteLanding = () => {
                     <span>{routeData.emoji}</span>
                 </div>
                 <h1 className="text-3xl md:text-4xl font-black mb-2">
-                    Trenes {routeData.from} <ArrowRight className="inline text-indigo-400" size={28} /> {routeData.to}
+                    Trenes {routeData.from} <ArrowRight className="inline text-[#d4a853]" size={28} /> {routeData.to}
                 </h1>
                 <p className="text-gray-400 text-lg">Compara precios y encuentra el mejor billete de tren.</p>
             </div>
@@ -60,7 +60,7 @@ export const RouteLanding = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div className="glass-card p-6 text-center">
                     <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Precio medio</div>
-                    <div className="text-2xl font-black text-indigo-400">{routeData.avgPrice}</div>
+                    <div className="text-2xl font-black text-[#d4a853]">{routeData.avgPrice}</div>
                 </div>
                 <div className="glass-card p-6 text-center">
                     <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Duración</div>
@@ -73,8 +73,8 @@ export const RouteLanding = () => {
             </div>
 
             {/* Tip */}
-            <div className="glass-card p-6 mb-8 border-l-4 border-indigo-500">
-                <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Consejo para ahorrar</div>
+            <div className="glass-card p-6 mb-8 border-l-4 border-[#d4a853]">
+                <div className="text-[10px] font-black uppercase tracking-widest text-[#d4a853] mb-2">Consejo para ahorrar</div>
                 <p className="text-gray-300">{routeData.tip}</p>
             </div>
 
@@ -99,7 +99,7 @@ export const RouteLanding = () => {
 
             {/* CTA */}
             <div className="text-center">
-                <Link to="/" className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 transition-colors text-lg">
+                <Link to="/" className="inline-flex items-center gap-2 px-8 py-4 bg-[#c9973f] text-[#0a0f1c] font-black rounded-2xl hover:bg-[#a8842e] transition-colors text-lg">
                     <Search size={20} />
                     Buscar con fecha exacta
                 </Link>
@@ -127,7 +127,7 @@ export const RouteLanding = () => {
                         .filter(([slug]) => slug !== routeSlug)
                         .slice(0, 6)
                         .map(([slug, data]) => (
-                            <Link key={slug} to={`/trenes/${slug}`} className="glass-card p-4 hover:border-indigo-500/30 transition-all">
+                            <Link key={slug} to={`/trenes/${slug}`} className="glass-card p-4 hover:border-[#d4a853]/30 transition-all">
                                 <div className="text-xs font-bold">{data.emoji} {data.from} → {data.to}</div>
                                 <div className="text-[10px] text-gray-500 mt-1">{data.avgPrice} · {data.duration}</div>
                             </Link>
@@ -151,14 +151,14 @@ export const PopularRoutesIndex = () => {
             <p className="text-gray-400 mb-8">Compara precios y encuentra los mejores billetes de tren.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Object.entries(POPULAR_ROUTES).map(([slug, data]) => (
-                    <Link key={slug} to={`/trenes/${slug}`} className="glass-card p-6 hover:border-indigo-500/30 transition-all group">
+                    <Link key={slug} to={`/trenes/${slug}`} className="glass-card p-6 hover:border-[#d4a853]/30 transition-all group">
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="font-bold text-lg">{data.emoji} {data.from} → {data.to}</div>
                                 <div className="text-sm text-gray-500 mt-1">{data.operators.join(', ')}</div>
                             </div>
                             <div className="text-right">
-                                <div className="text-lg font-black text-indigo-400">{data.avgPrice}</div>
+                                <div className="text-lg font-black text-[#d4a853]">{data.avgPrice}</div>
                                 <div className="text-xs text-gray-500">{data.duration}</div>
                             </div>
                         </div>

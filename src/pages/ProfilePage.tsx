@@ -13,7 +13,7 @@ const COUNTRIES = [
 ];
 
 const Medal = ({ icon, title, desc, achieved }: { icon: string, title: string, desc: string, achieved?: boolean }) => (
-    <div className={`p-4 rounded-2xl border transition-all flex flex-col items-center text-center gap-1 ${achieved ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-white/5 border-transparent opacity-40'}`}>
+    <div className={`p-4 rounded-2xl border transition-all flex flex-col items-center text-center gap-1 ${achieved ? 'bg-[#d4a853]/10 border-[#d4a853]/20' : 'bg-white/5 border-transparent opacity-40'}`}>
         <div className="text-3xl mb-1">{icon}</div>
         <div className="text-xs font-black text-white">{title}</div>
         <div className="text-[9px] text-[var(--text-muted)] font-medium leading-tight">{desc}</div>
@@ -30,7 +30,7 @@ const StatProgress = ({ label, value, max, unit, color }: { label: string, value
             <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: `${(value / max) * 100}%` }}
-                className={`h-full ${color} shadow-[0_0_10px_rgba(99,102,241,0.3)]`} 
+                className={`h-full ${color} shadow-[0_0_10px_rgba(212,168,83,0.3)]`} 
             />
         </div>
     </div>
@@ -45,8 +45,8 @@ export const ProfilePage = () => {
     if (isAnonymousMode && !userProfile.isRegistered) {
         return (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-8 md:p-10 flex flex-col items-center justify-center text-center">
-                <div className="max-w-md glass-card p-12 border-indigo-500/20 shadow-2xl shadow-indigo-500/10">
-                    <div className="w-20 h-20 bg-indigo-500/10 rounded-3xl flex items-center justify-center text-indigo-400 mb-8 mx-auto border border-indigo-500/20">
+                <div className="max-w-md glass-card p-12 border-[#d4a853]/20 shadow-2xl shadow-[#d4a853]/10">
+                    <div className="w-20 h-20 bg-[#d4a853]/10 rounded-3xl flex items-center justify-center text-[#d4a853] mb-8 mx-auto border border-[#d4a853]/20">
                         <User size={40} />
                     </div>
                     <h2 className="text-3xl font-black text-white tracking-tight mb-4">¿Listo para viajar?</h2>
@@ -56,7 +56,7 @@ export const ProfilePage = () => {
                     <div className="flex flex-col gap-4">
                         <button 
                             onClick={() => setAuthModalOpen(true)}
-                            className="btn-primary py-4 text-sm font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20"
+                            className="btn-primary py-4 text-sm font-black uppercase tracking-widest shadow-lg shadow-[#d4a853]/20"
                         >
                             Crear una Cuenta
                         </button>
@@ -69,7 +69,7 @@ export const ProfilePage = () => {
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-8 md:p-10 overflow-y-auto">
             <header className="mb-10">
-                <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Cuenta</div>
+                <div className="text-xs font-bold text-[#d4a853] uppercase tracking-widest mb-1">Cuenta</div>
                 <h1 className="text-3xl font-black tracking-tight">Mi Perfil</h1>
                 <p className="text-[var(--text-muted)] text-sm mt-1.5">Personaliza tu experiencia en EasyTrain.</p>
             </header>
@@ -84,8 +84,8 @@ export const ProfilePage = () => {
                             <div className="font-black text-xl text-white flex items-center gap-2 justify-center">
                                 {form.name || 'Viajero'}
                                 {userProfile.isRegistered ? (
-                                    <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center" title="Usuario Registrado">
-                                        <Save size={10} className="text-white" />
+                                    <div className="w-5 h-5 bg-[#d4a853] rounded-full flex items-center justify-center" title="Usuario Registrado">
+                                        <Save size={10} className="text-[#0a0f1c]" />
                                     </div>
                                 ) : (
                                     <div className="w-5 h-5 bg-amber-500/20 rounded-full flex items-center justify-center" title="Registro Pendiente">
@@ -105,7 +105,7 @@ export const ProfilePage = () => {
                                 <button
                                     key={a}
                                     onClick={() => setForm(f => ({ ...f, avatar: a }))}
-                                    className={`text-2xl p-2 rounded-xl transition-all ${form.avatar === a ? 'bg-indigo-500/20 ring-1 ring-indigo-400/40' : 'hover:bg-white/5'}`}
+                                    className={`text-2xl p-2 rounded-xl transition-all ${form.avatar === a ? 'bg-[#d4a853]/20 ring-1 ring-[#d4a853]/40' : 'hover:bg-white/5'}`}
                                 >
                                     {a}
                                 </button>
@@ -206,7 +206,7 @@ export const ProfilePage = () => {
                                     setTimeout(() => setSaved(false), 2500);
                                 }}
                                 whileTap={{ scale: 0.97 }}
-                                className={`btn-primary text-sm transition-all ${saved ? '!bg-green-600 !shadow-green-500/20' : ''} ${!userProfile.isRegistered ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#0d0f1a]' : ''}`}
+                                className={`btn-primary text-sm transition-all ${saved ? '!bg-green-600 !shadow-green-500/20' : ''} ${!userProfile.isRegistered ? 'ring-2 ring-[#d4a853] ring-offset-2 ring-offset-[#0d0f1a]' : ''}`}
                             >
                                 <Save size={15} />
                                 {userProfile.isRegistered ? (saved ? '¡Guardado!' : 'Actualizar') : 'Registrarse Ahora'}
@@ -242,7 +242,7 @@ export const ProfilePage = () => {
                     <div className="glass-card p-8">
                         <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">Estadísticas de Impacto</h3>
                         <div className="space-y-6">
-                            <StatProgress label="Rutas Buscadas" value={searchHistory.length} max={50} unit="rutas" color="bg-indigo-500" />
+                            <StatProgress label="Rutas Buscadas" value={searchHistory.length} max={50} unit="rutas" color="bg-[#d4a853]" />
                             <StatProgress label="Favoritos Guardados" value={favorites.length} max={20} unit="rutas" color="bg-green-500" />
                             <StatProgress label="Alertas Activas" value={priceAlerts.length} max={10} unit="alertas" color="bg-amber-500" />
                         </div>

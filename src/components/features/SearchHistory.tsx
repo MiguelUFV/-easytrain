@@ -28,9 +28,9 @@ export const SearchHistoryPanel = ({ onSelect }: Props) => {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             onClick={() => onSelect(entry.fromId, entry.fromName, entry.toId, entry.toName, entry.date)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all group text-sm"
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/5 hover:border-[#d4a853]/30 hover:bg-[#d4a853]/5 transition-all group text-sm"
                         >
-                            <Clock size={12} className="text-[var(--text-muted)] group-hover:text-indigo-400 transition-colors" />
+                            <Clock size={12} className="text-[var(--text-muted)] group-hover:text-[#d4a853] transition-colors" />
                             <span className="font-semibold text-white text-xs">{entry.fromName}</span>
                             <ArrowRight size={10} className="text-[var(--text-muted)]" />
                             <span className="font-semibold text-white text-xs">{entry.toName}</span>
@@ -53,7 +53,7 @@ export const SearchHistoryPage = () => {
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-8 md:p-10 overflow-y-auto">
             <header className="mb-10">
-                <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Actividad</div>
+                <div className="text-xs font-bold text-[#d4a853] uppercase tracking-widest mb-1">Actividad</div>
                 <h1 className="text-3xl font-black tracking-tight">Historial de Búsquedas</h1>
                 <p className="text-[var(--text-muted)] text-sm mt-1.5">Tus últimas rutas buscadas.</p>
             </header>
@@ -75,7 +75,7 @@ export const SearchHistoryPage = () => {
                             className="glass-card p-5 flex items-center justify-between gap-4"
                         >
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center text-indigo-400">
+                                <div className="w-10 h-10 rounded-2xl bg-[#d4a853]/10 border border-[#d4a853]/15 flex items-center justify-center text-[#d4a853]">
                                     <Search size={18} />
                                 </div>
                                 <div>

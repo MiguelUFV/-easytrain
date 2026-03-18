@@ -70,7 +70,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
             onClick={() => setTripType(type)}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
               tripType === type
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                ? 'bg-[#c9973f] text-[#0a0f1c] shadow-md shadow-[#d4a853]/20'
                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
             }`}
           >
@@ -98,7 +98,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearch, isLoading })
         <div className="flex items-end pb-[1px]">
           <button
             onClick={handleSwap}
-            className="w-10 h-10 rounded-full glass-card flex items-center justify-center text-gray-500 flex-shrink-0 hover:text-indigo-400 hover:border-indigo-500/30 transition-all border border-white/5"
+            className="w-10 h-10 rounded-full glass-card flex items-center justify-center text-gray-500 flex-shrink-0 hover:text-[#d4a853] hover:border-[#d4a853]/30 transition-all border border-white/5"
             title="Intercambiar origen y destino"
           >
             <ArrowRightLeft size={14} />

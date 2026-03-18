@@ -69,7 +69,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
             onClick={handleCardClick}
             className={`glass-card p-5 cursor-pointer relative overflow-hidden transition-all ${
                 isSelected
-                    ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 shadow-xl shadow-indigo-500/10'
+                    ? 'border-[#d4a853]/50 ring-1 ring-[#d4a853]/30 shadow-xl shadow-[#d4a853]/10'
                     : 'border-white/5 hover:border-white/10'
             } ${isSaving ? 'border-amber-400/30' : ''}`}
         >
@@ -82,14 +82,14 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
             {/* Header */}
             <div className="flex justify-between items-start mb-5">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-500/15 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                    <div className="w-10 h-10 bg-[#d4a853]/15 rounded-2xl flex items-center justify-center text-[#d4a853] border border-[#d4a853]/20">
                         <Train size={18} />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
                             <h4 className="font-black text-base text-white">{route.operator}</h4>
                             {route.lineName && (
-                                <span className="bg-indigo-500/10 text-indigo-300 text-[10px] px-2 py-0.5 rounded-md font-black border border-indigo-500/15">
+                                <span className="bg-[#d4a853]/10 text-[#f0c674] text-[10px] px-2 py-0.5 rounded-md font-black border border-[#d4a853]/15">
                                     {route.lineName}
                                 </span>
                             )}
@@ -115,7 +115,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                     <div className="text-right">
                         <div className="flex items-center justify-end gap-1 text-2xl font-black">
                             <span className="text-white">{route.price}</span>
-                            <Euro size={18} className="text-indigo-400" />
+                            <Euro size={18} className="text-[#d4a853]" />
                         </div>
                         <div className="text-[10px] text-[var(--text-muted)] font-semibold">por persona</div>
                     </div>
@@ -136,7 +136,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                     </div>
                     <div className="text-[10px] text-[var(--text-muted)] mt-1">
                         {safeFormat(route.departureTime, 'd MMM')}
-                        {route.platform && <span className="ml-2 text-indigo-400 font-bold">Andén {route.platform}</span>}
+                        {route.platform && <span className="ml-2 text-[#d4a853] font-bold">Andén {route.platform}</span>}
                     </div>
                 </div>
 
@@ -145,16 +145,16 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                         <Clock size={10} /> {duration}
                     </div>
                     <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                        <div className="w-10 h-px bg-gradient-to-r from-indigo-500 to-indigo-500/30" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#d4a853]" />
+                        <div className="w-10 h-px bg-gradient-to-r from-[#d4a853] to-[#d4a853]/30" />
                         <motion.div
                             animate={{ x: [0, 8, 0] }}
                             transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
                         >
-                            <ArrowRight size={10} className="text-indigo-400" />
+                            <ArrowRight size={10} className="text-[#d4a853]" />
                         </motion.div>
-                        <div className="w-10 h-px bg-gradient-to-r from-indigo-500/30 to-indigo-500" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                        <div className="w-10 h-px bg-gradient-to-r from-[#d4a853]/30 to-[#c9973f]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#d4a853]" />
                     </div>
                 </div>
 
@@ -175,7 +175,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                             e.stopPropagation();
                             setShowItinerary(!showItinerary);
                         }}
-                        className="flex items-center gap-1 text-xs font-bold text-indigo-400/70 hover:text-indigo-300 transition-colors uppercase tracking-wider"
+                        className="flex items-center gap-1 text-xs font-bold text-[#d4a853]/70 hover:text-[#f0c674] transition-colors uppercase tracking-wider"
                     >
                         {showItinerary ? 'Ocultar Paradas' : 'Ver Paradas'}
                         <ChevronDown size={13} className={`transition-transform ${showItinerary ? 'rotate-180' : ''}`} />
@@ -187,7 +187,7 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                             <AlertCircle size={11} /> Retraso
                         </div>
                     )}
-                    <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <div className="text-[10px] text-[#d4a853] font-bold uppercase tracking-wider flex items-center gap-1">
                         Abrir en mapa <ArrowRight size={10} />
                     </div>
                 </div>
@@ -220,12 +220,12 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                             {route.stops.map((stop: any, idx: number) => (
                                 <div key={idx} className="flex gap-4 group">
                                     <div className="flex flex-col items-center">
-                                        <div className="w-2 h-2 rounded-full bg-indigo-500/50 group-hover:bg-indigo-500 transition-colors" />
+                                        <div className="w-2 h-2 rounded-full bg-[#d4a853]/50 group-hover:bg-[#d4a853] transition-colors" />
                                         {idx !== route.stops!.length - 1 && <div className="w-px flex-1 bg-white/10" />}
                                     </div>
                                     <div className="flex-1 pb-4 flex justify-between items-start">
                                         <div>
-                                            <div className="text-xs font-bold text-white transition-colors group-hover:text-indigo-400">
+                                            <div className="text-xs font-bold text-white transition-colors group-hover:text-[#d4a853]">
                                                 {stop.stationName}
                                             </div>
                                             {stop.platform && <div className="text-[10px] text-gray-500">Andén {stop.platform}</div>}

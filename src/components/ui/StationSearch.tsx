@@ -127,7 +127,7 @@ export const StationSearch: React.FC<StationSearchProps> = ({
           }}
         />
         {isLoading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#d4a853]">
             <Loader2 size={14} className="animate-spin" />
           </div>
         )}
@@ -158,19 +158,19 @@ export const StationSearch: React.FC<StationSearchProps> = ({
             <div className="max-h-60 overflow-y-auto">
               {!inputText.trim() && (
                 <div className="px-4 py-2 bg-white/5 border-b border-white/5">
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400">Hubs Populares</span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#d4a853]">Hubs Populares</span>
                 </div>
               )}
               {suggestions.map((station) => (
                 <button
                   key={station.id}
-                  className="w-full px-4 py-3 text-left hover:bg-indigo-500/8 flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 group"
+                  className="w-full px-4 py-3 text-left hover:bg-[#d4a853]/8 flex items-center gap-3 transition-colors border-b border-white/5 last:border-0 group"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     handleSelect(station);
                   }}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0 border border-indigo-500/15 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                  <div className="w-8 h-8 rounded-xl bg-[#d4a853]/10 flex items-center justify-center text-[#d4a853] flex-shrink-0 border border-[#d4a853]/15 group-hover:bg-[#d4a853] group-hover:text-[#0a0f1c] transition-all">
                     <MapPin size={14} />
                   </div>
                   <div className="min-w-0">

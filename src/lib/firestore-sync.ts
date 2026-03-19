@@ -43,6 +43,7 @@ export interface FirestoreUserData {
 // ─── Save functions ──────────────────────────────────────────────────
 
 function getUserDocRef(uid: string) {
+    if (!db) throw new Error('Firebase not configured');
     return doc(db, 'users', uid);
 }
 
@@ -104,6 +105,7 @@ type AuthCallback = (user: User | null) => void;
 
 /** Listen for auth state changes (login/logout) */
 export function onAuthChange(callback: AuthCallback): Unsubscribe {
+    if (!auth) return () => {}; // Firebase not configured — no-op
     return onAuthStateChanged(auth, callback);
 }
 
@@ -111,7 +113,7 @@ export function onAuthChange(callback: AuthCallback): Unsubscribe {
 
 /** Get current authenticated user's UID, or null */
 export function getCurrentUid(): string | null {
-    return auth.currentUser?.uid ?? null;
+    return auth?.currentUser?.uid ?? null;
 }
 
 /** Merge cloud data with local data, preferring cloud for conflicts */

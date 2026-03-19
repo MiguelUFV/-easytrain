@@ -71,6 +71,8 @@ export async function registerUser(
         return { success: false, error: 'La contraseña debe tener al menos 6 caracteres' };
     }
 
+    if (!auth || !db) return { success: false, error: 'Autenticación no disponible en este entorno.' };
+
     try {
         const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
         const user = credential.user;
@@ -115,6 +117,8 @@ export async function loginUser(
     if (!email.trim() || !password) {
         return { success: false, error: 'Introduce email y contraseña' };
     }
+
+    if (!auth || !db) return { success: false, error: 'Autenticación no disponible en este entorno.' };
 
     try {
         const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -173,5 +177,6 @@ export async function loginUser(
 
 /** Cierra la sesión de Firebase */
 export async function logoutUser(): Promise<void> {
+    if (!auth) return;
     await signOut(auth);
 }

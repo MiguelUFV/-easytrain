@@ -24,8 +24,8 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  *  8. NS (Países Bajos)       → vía /api-db — UIC 84, cubierta por HAFAS de DB
  *  9. ČD (Rep. Checa)        → vía /api-db + /api-oebb — DB cubre Praha-Berlin/Hamburg;
  *                               ÖBB cubre el corredor Viena-Praga (ICs, RJs, ECs)
- * 10. SJ (Suecia)            → vía /api-db + /api-rejse — DB cubre conexiones internacionales;
- *                               Rejseplansen cubre el corredor Øresund (CPH↔Malmö↔Estocolmo)
+ * 10. SJ (Suecia)            → /api/resrobot — ResRobot v2.1 (Trafiklab) — red completa SJ;
+ *                               + /api-rejse como complemento para el corredor Øresund
  *  9. Renfe (España)          → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
  *                               → /api-renfe-rt  — GTFS-RT: alertas de servicio
  *
@@ -983,6 +983,111 @@ export async function fetchRenfeAlerts(): Promise<RenfeAlert[]> {
     }
 }
 
+// ─── API ResRobot (Suecia — Trafiklab v2.1) ───────────────────────────────────
+// Proxy en /api/resrobot — la key vive solo en el servidor (Vercel env var).
+// Dev: Vite proxy en vite.config.ts transforma la petición y añade la key.
+
+async function fetchStationsFromResRobot(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(
+        `/api/resrobot?type=stations&q=${encodeURIComponent(query)}`, 8000
+    );
+    if (!res.ok) throw new Error(`ResRobot stations ${res.status}`);
+    const data = await res.json();
+
+    return (data.stopLocationOrCoordLocation ?? [])
+        .map((entry: any) => {
+            const s = entry.StopLocation;
+            if (!s) return null;
+            const id = String(s.extId);
+            const station: Station = {
+                id,
+                name: s.name,
+                city: s.name,
+                country: 'Suecia',
+                coordinates: s.lat && s.lon ? { lat: s.lat, lng: s.lon } : undefined,
+            };
+            cacheStationName(id, station.name);
+            return station;
+        })
+        .filter((s: Station | null): s is Station => s !== null);
+}
+
+async function fetchRoutesFromResRobot(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '12:00:00';
+    if (isToday) {
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        time = `${h}:${m}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+
+    const res = await fetchWithTimeout(
+        `/api/resrobot?type=routes&from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&date=${searchDate}&time=${encodeURIComponent(time)}`,
+        10000
+    );
+    if (!res.ok) throw new Error(`ResRobot routes ${res.status}`);
+    const data = await res.json();
+    if (!data?.Trip?.length) return [];
+
+    return (data.Trip as any[]).map((trip: any) => {
+        const legs: any[] = trip.LegList?.Leg ?? [];
+        if (!legs.length) return null;
+
+        const firstLeg = legs[0];
+        const lastLeg  = legs[legs.length - 1];
+        const origin   = firstLeg.Origin;
+        const dest     = lastLeg.Destination;
+
+        const depTime = `${origin.rtDate ?? origin.date}T${origin.rtTime ?? origin.time}`;
+        const arrTime = `${dest.rtDate ?? dest.date}T${dest.rtTime ?? dest.time}`;
+
+        const fromId2 = String(origin.extId ?? fromId);
+        const toId2   = String(dest.extId   ?? toId);
+        cacheStationName(fromId2, origin.name);
+        cacheStationName(toId2,   dest.name);
+
+        const operators = [...new Set<string>(
+            legs.flatMap((l: any) => (l.Product ?? []).map((p: any) => p.operator).filter(Boolean))
+        )];
+        const lineNames = legs.map((l: any) => l.Product?.[0]?.name ?? l.name ?? '').filter(Boolean);
+
+        // Transbordos como paradas intermedias
+        const stops: Route['stops'] = legs.slice(0, -1).map((l: any, i: number) => ({
+            stationId: String(l.Destination?.extId ?? ''),
+            stationName: `🔄 Transbordo: ${l.Destination?.name ?? ''}`,
+            arrivalTime: l.Destination?.date
+                ? `${l.Destination.rtDate ?? l.Destination.date}T${l.Destination.rtTime ?? l.Destination.time}`
+                : undefined,
+            departureTime: legs[i + 1]?.Origin?.date
+                ? `${legs[i + 1].Origin.rtDate ?? legs[i + 1].Origin.date}T${legs[i + 1].Origin.rtTime ?? legs[i + 1].Origin.time}`
+                : undefined,
+            isTransfer: true,
+        }));
+
+        return buildRoute({
+            id: `resrobot-${fromId2}-${toId2}-${depTime}`,
+            fromStationId: fromId2,
+            toStationId:   toId2,
+            fromStationName: origin.name,
+            toStationName:   dest.name,
+            fromCoords: null,
+            toCoords:   null,
+            departureTime: depTime,
+            arrivalTime:   arrTime,
+            price: undefined, // ResRobot no devuelve precios
+            operator: operators.join(' → ') || 'SJ',
+            type: legs.length > 1 ? `${legs.length} tramos` : (firstLeg.Product?.[0]?.catOutL ?? 'Train'),
+            platform: firstLeg.Origin?.track,
+            delay: 0,
+            lineName: lineNames.join(' → '),
+            legs: legs.length,
+            stops,
+        });
+    }).filter((r: Route | null): r is Route => r !== null);
+}
+
 // ─── Helpers internos ─────────────────────────────────────────────────────────
 
 function buildStopsFromLegs(legs: any[]) {
@@ -1098,6 +1203,7 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
         fetchStationsFromOEBB(safe),
         fetchStationsFromPKP(safe),
         fetchStationsFromRejse(safe),
+        fetchStationsFromResRobot(safe),
         fetchStationsFromRenfe(safe),
         fetchStationsFromSNCF(safe),
     ]);
@@ -1145,9 +1251,11 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useOEBB    = isAustrianStation(fromId) || isAustrianStation(toId)
                     || isCzechStation(fromId)    || isCzechStation(toId);
     const usePKP     = isPolishStation(fromId)   || isPolishStation(toId);
-    // Rejseplansen cubre Dinamarca + corredor Øresund (CPH-Malmö-Estocolmo) → activo también para Suecia
-    const useRejse   = isDanishStation(fromId)   || isDanishStation(toId)
-                    || isSwedishStation(fromId)  || isSwedishStation(toId);
+    // Rejseplansen cubre Dinamarca + corredor Øresund → activo para DK y SE (complemento a ResRobot)
+    const useRejse    = isDanishStation(fromId)  || isDanishStation(toId)
+                     || isSwedishStation(fromId) || isSwedishStation(toId);
+    // ResRobot cubre toda la red ferroviaria sueca (SJ, regional, etc.)
+    const useResRobot = isSwedishStation(fromId) || isSwedishStation(toId);
     // NL (UIC 84) y SE doméstico → cubiertos por DB HAFAS internacional
 
     const promises: Promise<Route[]>[] = [];
@@ -1157,7 +1265,8 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     if (useEntur)  promises.push(fetchRoutesFromEntur(fromId, toId, validDate).catch(() => []));
     if (useOEBB)   promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
     if (usePKP)    promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
-    if (useRejse)  promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
+    if (useRejse)     promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
+    if (useResRobot)  promises.push(fetchRoutesFromResRobot(fromId, toId, validDate).catch(() => []));
 
 
     const results = await Promise.all(promises);

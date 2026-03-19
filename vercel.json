@@ -9,6 +9,9 @@
     { "source": "/api-vbb/:path*",  "destination": "https://v6.vbb.transport.rest/:path*" },
     { "source": "/api-bvg/:path*",  "destination": "https://v6.bvg.transport.rest/:path*" },
     { "source": "/api-rejse/:path*", "destination": "https://v6.rejseplansen.transport.rest/:path*" },
+    { "source": "/api-renfe-rt/:path*",   "destination": "https://gtfsrt.renfe.com/:path*" },
+    { "source": "/api-renfe-ckan/:path*", "destination": "https://data.renfe.com/:path*" },
+    { "source": "/api-renfe-gtfs/:path*", "destination": "https://ssl.renfe.com/:path*" },
     { "source": "/(.*)",             "destination": "/index.html" }
   ],
   "headers": [

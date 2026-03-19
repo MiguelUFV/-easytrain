@@ -83,11 +83,22 @@ export default defineConfig({
         runtimeCaching: [
           {
             // Cache de búsquedas de estaciones (respuestas rápidas)
-            urlPattern: /^\/api-(db|ch|irail)\/.*(locations|stations|connections)|https:\/\/(v6\.db\.transport\.rest|transport\.opendata\.ch|api\.irail\.be|data\.renfe\.com|ressources\.data\.sncf\.com)\/.*/i,
+            urlPattern: /^\/api-(db|ch|irail|oebb|pkp|flixbus|vbb|bvg|rejse|renfe-ckan)\/.*(locations|stations|connections|datastore_search)|https:\/\/(v6\.db\.transport\.rest|transport\.opendata\.ch|api\.irail\.be|data\.renfe\.com|ressources\.data\.sncf\.com)\/.*/i,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'station-searches',
               expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 }, // 1h
+            },
+          },
+          {
+            // Cache de datos en tiempo real de Renfe (corta duración)
+            urlPattern: /^\/api-renfe-rt\/.*/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'renfe-realtime-cache',
+              expiration: { maxEntries: 20, maxAgeSeconds: 30 }, // 30 segundos
+              networkTimeoutSeconds: 8,
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
           {
@@ -190,6 +201,39 @@ export default defineConfig({
           });
           proxy.on('proxyReq', (proxyReq, _req, _res) => {
             proxyReq.setHeader('User-Agent', 'EasyTrain/2.5 (train-planner)');
+          });
+        },
+      },
+      '/api-renfe-rt': {
+        target: 'https://gtfsrt.renfe.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-renfe-rt/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error (Renfe RT)', err);
+          });
+        },
+      },
+      '/api-renfe-ckan': {
+        target: 'https://data.renfe.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-renfe-ckan/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error (Renfe CKAN)', err);
+          });
+        },
+      },
+      '/api-renfe-gtfs': {
+        target: 'https://ssl.renfe.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-renfe-gtfs/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error (Renfe GTFS)', err);
           });
         },
       },

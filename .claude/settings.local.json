@@ -26,7 +26,10 @@
       "Bash(where npm.cmd)",
       "Bash(where npx.cmd)",
       "Read(//c/Program Files/nodejs/**)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:data.renfe.com)",
+      "WebFetch(domain:gtfsrt.renfe.com)",
+      "Skill(commit-commands:commit-push-pr)"
     ]
   }
 }

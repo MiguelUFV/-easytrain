@@ -17,8 +17,10 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  *  1. DB (Deutsche Bahn) v6   → /api-db    — Alemania + conexiones internacionales (toda Europa)
  *  2. SBB (Suiza)             → /api-ch    — Suiza completa (transport.opendata.ch)
  *  3. iRail (Bélgica)         → /api-irail — Bélgica completa (NMBS/SNCB)
- *  4. Entur (Noruega)         → api.entur.io — Transporte público noruego (gratis, sin registro)
- *  5. Renfe (España)          → data.renfe.com — 1896 estaciones españolas (CKAN open data)
+ *  4. Entur (Noruega)          → api.entur.io — Transporte público noruego (gratis, sin registro)
+ *  5. Renfe (España)           → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
+ *                               → /api-renfe-rt  — GTFS-RT: alertas, posiciones, retrasos
+ *                               → /api-renfe-gtfs — Horarios estáticos GTFS (AVE+LD+cercanías)
  *
  * Fallback: mock data + deep-link a web oficial del operador
  */
@@ -780,16 +782,22 @@ async function fetchRoutesFromEntur(fromId: string, toId: string, date?: string)
 // No tiene journey planner API — las rutas se buscan vía DB HAFAS (conexiones internacionales)
 // y deep-link a renfe.com para reservas domésticas.
 
-// Resource IDs de las principales regiones de cercanías
+// Resource IDs de los datasets de estaciones de Renfe (CKAN datastore)
+// Prioridad: Larga Distancia primero (incluye AVE), luego cercanías por región
 const RENFE_STATION_RESOURCES = [
     '783e0626-6fa8-4ac7-a880-fa53144654ff', // Listado completo (1250 estaciones)
-    'b22cd560-3a2b-45dd-a25d-2406941f6fcc', // AVE / Larga Distancia / Media Distancia (646 estaciones)
+    'b22cd560-3a2b-45dd-a25d-2406941f6fcc', // AVE / Larga Distancia / Media Distancia
+    'daa68d9b-77cf-4024-890f-285d31184c5a', // Cercanías Madrid
+    'e3969f12-aff2-468e-9b82-a65a6dd1a0d3', // Rodalies Barcelona
+    '0b1caf38-e6a9-4965-a94d-9a24c5a4ae84', // Cercanías Valencia
+    'ac3b4229-1c69-412f-a6de-29df913ece92', // Cercanías Sevilla
+    'a2368cff-1562-4dde-8466-9635ea3a572a', // Cercanías Málaga
 ];
 
 async function fetchStationsFromRenfe(query: string): Promise<Station[]> {
     // Buscar en los datasets de estaciones de Renfe
     const promises = RENFE_STATION_RESOURCES.map(async (resourceId) => {
-        const url = `https://data.renfe.com/api/3/action/datastore_search?resource_id=${resourceId}&q=${encodeURIComponent(query)}&limit=10`;
+        const url = `/api-renfe-ckan/api/3/action/datastore_search?resource_id=${resourceId}&q=${encodeURIComponent(query)}&limit=10`;
         const res = await fetchWithTimeout(url, 8000);
         if (!res.ok) throw new Error(`Renfe CKAN API ${res.status}`);
         const data = await res.json();
@@ -819,6 +827,114 @@ async function fetchStationsFromRenfe(query: string): Promise<Station[]> {
     return results
         .filter((r): r is PromiseFulfilledResult<Station[]> => r.status === 'fulfilled')
         .flatMap(r => r.value);
+}
+
+// ─── Renfe GTFS-RT (Tiempo Real) ─────────────────────────────────────────────
+// Endpoints JSON actualizados cada 20-30 segundos desde gtfsrt.renfe.com
+// Requiere proxy /api-renfe-rt para evitar CORS en el navegador.
+
+export interface RenfeAlert {
+    id: string;
+    text: string;
+    routeIds: string[];
+    activeSince: Date;
+}
+
+export interface RenfeVehiclePosition {
+    id: string;
+    tripId: string;
+    lat: number;
+    lng: number;
+    status: 'STOPPED_AT' | 'IN_TRANSIT_TO' | string;
+    stopId: string;
+    vehicleLabel: string;
+    isLongDistance: boolean;
+}
+
+export interface RenfeTripDelay {
+    tripId: string;
+    delaySeconds: number;
+    isCancelled: boolean;
+}
+
+/** Fetch alertas de servicio en tiempo real (Cercanías + LD). Actualización cada 20s. */
+export async function fetchRenfeAlerts(): Promise<RenfeAlert[]> {
+    try {
+        const res = await fetchWithTimeout('/api-renfe-rt/alerts.json', 8000);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.entity ?? [])
+            .map((e: any): RenfeAlert | null => {
+                const text = e.alert?.descriptionText?.translation?.[0]?.text ?? '';
+                if (!text) return null;
+                return {
+                    id: e.id,
+                    text,
+                    routeIds: (e.alert?.informedEntity ?? [])
+                        .map((ie: any) => ie.routeId ?? ie.stopId)
+                        .filter(Boolean),
+                    activeSince: new Date(parseInt(e.alert?.activePeriod?.[0]?.start ?? '0') * 1000),
+                };
+            })
+            .filter((a: RenfeAlert | null): a is RenfeAlert => a !== null);
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Fetch posiciones GPS de trenes en tiempo real.
+ * @param ldOnly true = solo AVE/Larga Distancia; false = solo Cercanías
+ */
+export async function fetchRenfeVehiclePositions(ldOnly = true): Promise<RenfeVehiclePosition[]> {
+    try {
+        const url = ldOnly
+            ? '/api-renfe-rt/vehicle_positions_LD.json'
+            : '/api-renfe-rt/vehicle_positions.json';
+        const res = await fetchWithTimeout(url, 8000);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.entity ?? [])
+            .map((e: any): RenfeVehiclePosition | null => {
+                const v = e.vehicle;
+                if (!v?.position?.latitude || !v?.position?.longitude) return null;
+                return {
+                    id: e.id,
+                    tripId: v.trip?.tripId ?? '',
+                    lat: v.position.latitude,
+                    lng: v.position.longitude,
+                    status: v.currentStatus ?? 'IN_TRANSIT_TO',
+                    stopId: v.stopId ?? '',
+                    vehicleLabel: v.vehicle?.label ?? '',
+                    isLongDistance: ldOnly,
+                };
+            })
+            .filter((v: RenfeVehiclePosition | null): v is RenfeVehiclePosition => v !== null);
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Fetch retrasos de viajes en tiempo real.
+ * @param ldOnly true = AVE/Larga Distancia; false = Cercanías
+ */
+export async function fetchRenfeTripDelays(ldOnly = true): Promise<RenfeTripDelay[]> {
+    try {
+        const url = ldOnly
+            ? '/api-renfe-rt/trip_updates_LD.json'
+            : '/api-renfe-rt/trip_updates.json';
+        const res = await fetchWithTimeout(url, 8000);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.entity ?? []).map((e: any): RenfeTripDelay => ({
+            tripId: e.tripUpdate?.trip?.tripId ?? e.id,
+            delaySeconds: e.tripUpdate?.delay ?? 0,
+            isCancelled: e.tripUpdate?.trip?.scheduleRelationship === 'CANCELED',
+        }));
+    } catch {
+        return [];
+    }
 }
 
 // ─── Helpers internos ─────────────────────────────────────────────────────────

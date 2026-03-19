@@ -25,6 +25,7 @@ import { useI18n } from './lib/i18n';
 import type { Station, PassengerCounts, Station as StationType } from './types';
 import { trackPageView, analytics } from './lib/analytics';
 import { SEOHead } from './components/ui/SEOHead';
+import { RenfeAlertsPanel } from './components/ui/RenfeAlertsPanel';
 
 // Lazy-loaded heavy pages
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
@@ -61,6 +62,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'time'>('time');
   const [maintenanceOp, setMaintenanceOp] = useState<{ name: string; url: string } | null>(null);
+  const [isSpanishRoute, setIsSpanishRoute] = useState(false);
 
   // When entering Dashboard, exit interrail route mode
   useEffect(() => {
@@ -117,6 +119,10 @@ const Dashboard = () => {
     }
 
     setMaintenanceOp(null);
+
+    // Detectar si la ruta involucra estaciones españolas para mostrar datos RT de Renfe
+    const spanishCheck = (id: string) => id.startsWith('renfe-') || id.startsWith('71') || id === '7100000' || id === '7100018' || id === '7100002';
+    setIsSpanishRoute(spanishCheck(params.from) || spanishCheck(params.to));
 
     try {
       const filtered = await fetchRoutes(params.from, params.to, params.departureDate);
@@ -378,6 +384,10 @@ const Dashboard = () => {
               <FilterButton label="Más Temprano" active={sortBy === 'time'} onClick={() => setSortBy('time')} />
             </div>
           </div>
+
+          {isSpanishRoute && (
+            <RenfeAlertsPanel className="mb-6" />
+          )}
 
           <div className="flex flex-col gap-3">
             {isLoading ? (

@@ -62,6 +62,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState<'price' | 'duration' | 'time'>('time');
   const [maintenanceOp, setMaintenanceOp] = useState<{ name: string; url: string } | null>(null);
+  const [noResultsFallback, setNoResultsFallback] = useState<{ name: string; url: string } | null>(null);
   const [isSpanishRoute, setIsSpanishRoute] = useState(false);
 
   // When entering Dashboard, exit interrail route mode
@@ -119,6 +120,7 @@ const Dashboard = () => {
     }
 
     setMaintenanceOp(null);
+    setNoResultsFallback(null);
 
     // Detectar si la ruta involucra estaciones españolas para mostrar datos RT de Renfe
     const spanishCheck = (id: string) => id.startsWith('renfe-') || id.startsWith('71');
@@ -128,6 +130,10 @@ const Dashboard = () => {
       const filtered = await fetchRoutes(params.from, params.to, params.departureDate);
       // Single source of truth: store.routes
       setRoutes(filtered);
+      // Si no hay resultados reales, ofrecer link al operador oficial (sin inventar rutas)
+      if (filtered.length === 0) {
+        setNoResultsFallback(getOfficialFallback(params.from, params.to));
+      }
       // Save to search history
       if (params.fromStation && params.toStation) {
         addSearchHistory({
@@ -434,9 +440,20 @@ const Dashboard = () => {
                   </>
                 ) : (
                   <>
-                    <div className="text-4xl mb-4">🔍</div>
-                    <div className="font-bold text-white mb-2">No se han encontrado rutas</div>
-                    <div className="text-sm text-[var(--text-muted)]">Prueba cambiando el origen, destino o la fecha.</div>
+                    <div className="absolute inset-0 bg-[#d4a853]/[0.02] transition-colors group-hover:bg-[#d4a853]/[0.04]" />
+                    <div className="relative z-10">
+                      <div className="text-4xl mb-4">🔍</div>
+                      <div className="font-bold text-white mb-2">No se han encontrado rutas</div>
+                      <div className="text-sm text-[var(--text-muted)] mb-6">No hay trenes disponibles para este trayecto en la fecha seleccionada.</div>
+                      {noResultsFallback && (
+                        <button
+                          onClick={() => window.open(noResultsFallback.url, '_blank')}
+                          className="btn-primary px-8 py-3 text-sm font-bold"
+                        >
+                          Consultar en {noResultsFallback.name}
+                        </button>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
@@ -445,21 +462,20 @@ const Dashboard = () => {
         </div>
 
         <aside className="flex flex-col gap-6">
-          {/* Landing features when not searching */}
+          {/* Quick-start suggestions when not searching */}
           {!calendarFrom && (
             <div className="glass-card p-6 border-[#d4a853]/10">
               <div className="flex items-center gap-2 text-[#d4a853] mb-3">
                 <Ticket size={16} fill="currentColor" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Ofertas Flash</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">Ruta Popular</span>
               </div>
               <h3 className="font-display text-sm font-semibold mb-2" style={{ color: 'var(--text-main)' }}>Madrid — Valencia</h3>
-              <div className="text-2xl font-bold text-[#d4a853] mb-1">19,90€</div>
-              <p className="text-[10px] text-[var(--text-muted)] mb-4">Solo hoy, billetes de alta velocidad con 60% dto.</p>
+              <p className="text-[10px] text-[var(--text-muted)] mb-4">Alta velocidad AVE. Busca disponibilidad y precios reales.</p>
               <button
                 onClick={() => handleDestinationClick("Valencia", "España", "7100002")}
                 className="w-full py-2.5 bg-[#d4a853]/[0.06] hover:bg-[#d4a853]/10 text-xs font-semibold rounded-xl transition-all border border-[#d4a853]/10 text-[#d4a853]"
               >
-                Reservar Ahora
+                Buscar esta ruta
               </button>
             </div>
           )}

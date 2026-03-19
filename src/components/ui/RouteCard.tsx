@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Train, Clock, ArrowRight, Euro, MapPin, AlertCircle, Heart, ChevronDown } from 'lucide-react';
 import type { Route, Station } from '../../types';
-import { OccupancyIndicator } from './OccupancyIndicator';
 import { ItineraryExporter } from './ItineraryExporter';
 import { format, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -113,11 +112,20 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
                         <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
                     </button>
                     <div className="text-right">
-                        <div className="flex items-center justify-end gap-1 text-2xl font-black">
-                            <span className="text-white">{route.price}</span>
-                            <Euro size={18} className="text-[#d4a853]" />
-                        </div>
-                        <div className="text-[10px] text-[var(--text-muted)] font-semibold">por persona</div>
+                        {route.price != null ? (
+                            <>
+                                <div className="flex items-center justify-end gap-1 text-2xl font-black">
+                                    <span className="text-white">{route.price}</span>
+                                    <Euro size={18} className="text-[#d4a853]" />
+                                </div>
+                                <div className="text-[10px] text-[var(--text-muted)] font-semibold">por persona</div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-lg font-black text-[var(--text-muted)]">—</div>
+                                <div className="text-[10px] text-[var(--text-muted)] font-semibold">ver precio</div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -169,7 +177,6 @@ export const RouteCard = ({ route, fromStation, toStation, isSaving }: Props) =>
 
             <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <OccupancyIndicator occupancy={route.occupancy || 0.4} />
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

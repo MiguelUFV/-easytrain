@@ -1405,7 +1405,7 @@ async function fetchRoutesFromIrishRail(fromId: string, toId: string, date?: str
                 operator: 'Irish Rail',
                 type: trainType === 'DART' ? 'DART' : trainType === 'Commuter' ? 'Commuter' : 'InterCity',
                 lineName: trainCode,
-                delay: delayMin * 60,
+                delay: delayMin,
                 stops: [],
             }));
         }
@@ -1470,7 +1470,7 @@ async function fetchRoutesFromIrishRail(fromId: string, toId: string, date?: str
                     operator: 'Irish Rail',
                     type: trainType === 'DART' ? 'DART' : trainType === 'Commuter' ? 'Commuter' : 'InterCity',
                     lineName: trainCode,
-                    delay: (parseInt(lateStr, 10) || 0) * 60,
+                    delay: parseInt(lateStr, 10) || 0,
                     stops: [],
                 });
             })
@@ -1602,32 +1602,6 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
 
     // Ordenar por hora de salida
     unique.sort((a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime());
-
-    // Si no hay resultados reales pero la zona está en nuestra lista de soportes oficiales,
-    // generamos una ruta "sintética" que permita al usuario ir a la web del operador.
-    if (unique.length === 0) {
-        const fallback = getOfficialFallback(fromId, toId);
-        if (fallback) {
-            const now = new Date();
-            const departure = validDate ? `${validDate}T12:00:00` : now.toISOString();
-            const arrival = validDate ? `${validDate}T15:00:00` : new Date(now.getTime() + 3*3600*1000).toISOString();
-            
-            unique.push(buildRoute({
-                id: `synthetic-${fromId}-${toId}`,
-                fromStationId: fromId,
-                toStationId: toId,
-                fromStationName: resolveStationName(fromId),
-                toStationName: resolveStationName(toId),
-                departureTime: departure,
-                arrivalTime: arrival,
-                operator: fallback.name,
-                type: 'Reserva Directa',
-                lineName: 'Enlace Oficial',
-                price: undefined,
-                stops: []
-            }));
-        }
-    }
 
     return unique;
 }

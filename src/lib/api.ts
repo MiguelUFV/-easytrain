@@ -189,6 +189,9 @@ export function isRegionSupported(fromId: string, toId: string): boolean {
         '51', '54', '55', '74', '76', '86', '82', '10', // PL, CZ, HU, SE, NO, DK, LU, FI
         '53', '52', '72', '73', '60', '70'              // RO, BG, XS, GR, IE, UK
     ];
+    // Irish Rail usa prefijo "ie-" en lugar de UIC numérico
+    if (fromId.startsWith('ie-') || toId.startsWith('ie-')) return true;
+
     const fromPrefix = fromId.substring(0, 2);
     const toPrefix = toId.substring(0, 2);
 
@@ -1378,13 +1381,11 @@ async function fetchRoutesFromIrishRail(fromId: string, toId: string, date?: str
         });
 
         for (const t of directTrains) {
-            const trainCode    = t.querySelector('Traincode')?.textContent?.trim() ?? '';
-            const trainType    = t.querySelector('Traintype')?.textContent?.trim() ?? 'Train';
-            const expDep       = t.querySelector('Exparrival')?.textContent?.trim() ?? '';
-            const schDep       = t.querySelector('Scharrival')?.textContent?.trim() ?? '';
-            const lateStr      = t.querySelector('Late')?.textContent?.trim() ?? '0';
-            const delayMin     = parseInt(lateStr, 10) || 0;
-            const statusStr    = t.querySelector('Status')?.textContent?.trim() ?? '';
+            const trainCode = t.querySelector('Traincode')?.textContent?.trim() ?? '';
+            const trainType = t.querySelector('Traintype')?.textContent?.trim() ?? 'Train';
+            const schDep    = t.querySelector('Schdepart')?.textContent?.trim() ?? '';
+            const lateStr   = t.querySelector('Late')?.textContent?.trim() ?? '0';
+            const delayMin  = parseInt(lateStr, 10) || 0;
 
             // Build ISO departure time from today + scheduled time (HH:MM)
             const todayStr = new Date().toISOString().slice(0, 10);

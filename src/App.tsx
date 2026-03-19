@@ -121,7 +121,7 @@ const Dashboard = () => {
     setMaintenanceOp(null);
 
     // Detectar si la ruta involucra estaciones españolas para mostrar datos RT de Renfe
-    const spanishCheck = (id: string) => id.startsWith('renfe-') || id.startsWith('71') || id === '7100000' || id === '7100018' || id === '7100002';
+    const spanishCheck = (id: string) => id.startsWith('renfe-') || id.startsWith('71');
     setIsSpanishRoute(spanishCheck(params.from) || spanishCheck(params.to));
 
     try {

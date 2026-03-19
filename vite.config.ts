@@ -317,6 +317,17 @@ export default defineConfig(({ mode }) => {
       },
       // ResRobot dev proxy — transforma /api/resrobot?type=...&q=...
       // a la URL real de ResRobot inyectando la key desde .env.local
+      '/api-irishrail': {
+        target: 'https://api.irishrail.ie/realtime/realtime.asmx',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api-irishrail/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error (Irish Rail)', err);
+          });
+        },
+      },
       '/api/resrobot': {
         target: 'https://api.resrobot.se',
         changeOrigin: true,

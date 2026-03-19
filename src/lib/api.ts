@@ -27,7 +27,8 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  * 10. SJ (Suecia)            → /api/resrobot — ResRobot v2.1 (Trafiklab) — red completa SJ;
  *                               + /api-rejse como complemento para el corredor Øresund
  * 11. VR (Finlandia)         → /api/digitransit — Digitransit OTP2 GraphQL (misma interfaz que Entur)
- *  9. Renfe (España)          → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
+ * 12. Renfe (España)          → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
+ * 13. Irish Rail (Irlanda)    → /api-irishrail  — Open data XML, tiempo real (sin registro)
  *                               → /api-renfe-rt  — GTFS-RT: alertas de servicio
  *
  * Fallback: deep-link a web oficial del operador
@@ -1285,6 +1286,205 @@ function buildRoute(p: RouteParams): Route {
     };
 }
 
+// ─── API Irish Rail (Irlanda) ────────────────────────────────────────────────
+// https://api.irishrail.ie/realtime/realtime.asmx
+// Sin registro — 100% open data XML. Sin journey planner para fechas futuras.
+// Estrategia: real-time trains desde origen → filtrar por destino (directo o parada intermedia).
+
+/** Irish Rail station IDs use prefix "ie-" + IATA-like station code (e.g. "ie-DBRTN") */
+const isIrishStation = (id: string) => id.startsWith('ie-');
+
+// Cache de estaciones IE (se llena en la primera búsqueda de estaciones)
+let irishStationsCache: { code: string; name: string; lat: number; lng: number }[] | null = null;
+
+async function getIrishStationsCache() {
+    if (irishStationsCache) return irishStationsCache;
+    try {
+        const res = await fetchWithTimeout('/api-irishrail/getAllStationsXML', 8000);
+        if (!res.ok) return [];
+        const xml = await res.text();
+        const doc = new DOMParser().parseFromString(xml, 'text/xml');
+        irishStationsCache = Array.from(doc.querySelectorAll('objStation')).map(s => ({
+            code: s.querySelector('StationCode')?.textContent?.trim() ?? '',
+            name: s.querySelector('StationDesc')?.textContent?.trim() ?? '',
+            lat:  parseFloat(s.querySelector('StationLatitude')?.textContent ?? '0'),
+            lng:  parseFloat(s.querySelector('StationLongitude')?.textContent ?? '0'),
+        })).filter(s => s.code && s.name);
+        return irishStationsCache;
+    } catch {
+        return [];
+    }
+}
+
+async function fetchStationsFromIrishRail(query: string): Promise<Station[]> {
+    const stations = await getIrishStationsCache();
+    const q = query.toLowerCase();
+    return stations
+        .filter(s => s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q))
+        .slice(0, 8)
+        .map(s => {
+            const id = `ie-${s.code}`;
+            const station: Station = {
+                id,
+                name: s.name,
+                city: s.name,
+                country: 'Irlanda',
+                coordinates: s.lat ? { lat: s.lat, lng: s.lng } : undefined,
+            };
+            cacheStationName(id, s.name);
+            return station;
+        });
+}
+
+/**
+ * Irish Rail real-time journey search.
+ * Uses getTrainsForStationByNumMinsXML to get all trains from origin in the next 6h,
+ * then checks destination field for direct trains and getTrainMovementsXML for indirect ones.
+ * Falls back to deep-link for future dates (API only returns real-time data).
+ */
+async function fetchRoutesFromIrishRail(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    if (!isIrishStation(fromId) || !isIrishStation(toId)) return [];
+
+    const fromCode = fromId.replace('ie-', '');
+    const toCode   = toId.replace('ie-', '');
+    const fromName = resolveStationName(fromId) || fromCode;
+    const toName   = resolveStationName(toId)   || toCode;
+
+    // Irish Rail API only has real-time data — future dates not supported
+    // If a future date is requested, return empty (fallback to deep-link via getOfficialFallback)
+    if (date) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (date > today) return [];
+    }
+
+    try {
+        // Fetch all trains departing from origin in next 360 minutes
+        const res = await fetchWithTimeout(
+            `/api-irishrail/getTrainsForStationByNumMinsXML?StationDesc=${encodeURIComponent(fromName)}&NumMins=360`,
+            8000
+        );
+        if (!res.ok) return [];
+        const xml = await res.text();
+        const doc = new DOMParser().parseFromString(xml, 'text/xml');
+        const trains = Array.from(doc.querySelectorAll('objStationData'));
+
+        const routes: Route[] = [];
+
+        // Phase 1: direct trains where Destination matches toCode or toName
+        const directTrains = trains.filter(t => {
+            const dest = t.querySelector('Destination')?.textContent?.trim() ?? '';
+            const destCode = t.querySelector('DestinationCode')?.textContent?.trim() ?? '';
+            return destCode === toCode || dest.toLowerCase().includes(toName.toLowerCase());
+        });
+
+        for (const t of directTrains) {
+            const trainCode    = t.querySelector('Traincode')?.textContent?.trim() ?? '';
+            const trainType    = t.querySelector('Traintype')?.textContent?.trim() ?? 'Train';
+            const expDep       = t.querySelector('Exparrival')?.textContent?.trim() ?? '';
+            const schDep       = t.querySelector('Scharrival')?.textContent?.trim() ?? '';
+            const lateStr      = t.querySelector('Late')?.textContent?.trim() ?? '0';
+            const delayMin     = parseInt(lateStr, 10) || 0;
+            const statusStr    = t.querySelector('Status')?.textContent?.trim() ?? '';
+
+            // Build ISO departure time from today + scheduled time (HH:MM)
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const depTime  = schDep ? `${todayStr}T${schDep.padStart(5, '0')}:00` : new Date().toISOString();
+            // Estimate arrival: add ~1.5h average for Irish intercity routes
+            const depMs  = new Date(depTime).getTime();
+            const arrTime = new Date(depMs + 90 * 60 * 1000).toISOString();
+
+            routes.push(buildRoute({
+                id: `ie-${trainCode}-${fromCode}-${toCode}`,
+                fromStationId: fromId,
+                toStationId:   toId,
+                fromStationName: fromName,
+                toStationName:   toName,
+                departureTime: depTime,
+                arrivalTime:   arrTime,
+                operator: 'Irish Rail',
+                type: trainType === 'DART' ? 'DART' : trainType === 'Commuter' ? 'Commuter' : 'InterCity',
+                lineName: trainCode,
+                delay: delayMin * 60,
+                stops: [],
+            }));
+        }
+
+        // Phase 2: trains that stop at destination as intermediate stop (max 4 to limit API calls)
+        const candidateTrains = trains
+            .filter(t => !directTrains.includes(t))
+            .slice(0, 4);
+
+        const movementResults = await Promise.allSettled(
+            candidateTrains.map(async t => {
+                const trainCode = t.querySelector('Traincode')?.textContent?.trim() ?? '';
+                const trainDate = t.querySelector('Traindate')?.textContent?.trim() ?? '';
+                if (!trainCode) return null;
+                const mvRes = await fetchWithTimeout(
+                    `/api-irishrail/getTrainMovementsXML?TrainId=${encodeURIComponent(trainCode)}&TrainDate=${encodeURIComponent(trainDate)}`,
+                    6000
+                );
+                if (!mvRes.ok) return null;
+                const mvXml = await mvRes.text();
+                const mvDoc = new DOMParser().parseFromString(mvXml, 'text/xml');
+                const movements = Array.from(mvDoc.querySelectorAll('objTrainMovements'));
+
+                // Check if train stops at destination
+                const stopsAtDest = movements.some(m => {
+                    const locCode = m.querySelector('LocationCode')?.textContent?.trim() ?? '';
+                    const locName = m.querySelector('LocationFullName')?.textContent?.trim() ?? '';
+                    return locCode === toCode || locName.toLowerCase().includes(toName.toLowerCase());
+                });
+                if (!stopsAtDest) return null;
+
+                // Find departure movement from origin
+                const originMov = movements.find(m => {
+                    const locCode = m.querySelector('LocationCode')?.textContent?.trim() ?? '';
+                    const locName = m.querySelector('LocationFullName')?.textContent?.trim() ?? '';
+                    return locCode === fromCode || locName.toLowerCase().includes(fromName.toLowerCase());
+                });
+                // Find arrival movement at destination
+                const destMov = movements.find(m => {
+                    const locCode = m.querySelector('LocationCode')?.textContent?.trim() ?? '';
+                    const locName = m.querySelector('LocationFullName')?.textContent?.trim() ?? '';
+                    return locCode === toCode || locName.toLowerCase().includes(toName.toLowerCase());
+                });
+
+                const schDep = originMov?.querySelector('ScheduledDeparture')?.textContent?.trim() ?? '';
+                const schArr = destMov?.querySelector('ScheduledArrival')?.textContent?.trim() ?? '';
+                const lateStr = t.querySelector('Late')?.textContent?.trim() ?? '0';
+                const trainType = t.querySelector('Traintype')?.textContent?.trim() ?? 'Train';
+                const todayStr = new Date().toISOString().slice(0, 10);
+                const depTime = schDep ? `${todayStr}T${schDep.padStart(5, '0')}:00` : new Date().toISOString();
+                const arrTime = schArr ? `${todayStr}T${schArr.padStart(5, '0')}:00`
+                    : new Date(new Date(depTime).getTime() + 90 * 60 * 1000).toISOString();
+
+                return buildRoute({
+                    id: `ie-${trainCode}-${fromCode}-${toCode}-via`,
+                    fromStationId: fromId,
+                    toStationId:   toId,
+                    fromStationName: fromName,
+                    toStationName:   toName,
+                    departureTime: depTime,
+                    arrivalTime:   arrTime,
+                    operator: 'Irish Rail',
+                    type: trainType === 'DART' ? 'DART' : trainType === 'Commuter' ? 'Commuter' : 'InterCity',
+                    lineName: trainCode,
+                    delay: (parseInt(lateStr, 10) || 0) * 60,
+                    stops: [],
+                });
+            })
+        );
+
+        for (const r of movementResults) {
+            if (r.status === 'fulfilled' && r.value) routes.push(r.value);
+        }
+
+        return routes;
+    } catch {
+        return [];
+    }
+}
+
 // ─── Rutas mock (Eliminado por transparencia — Solo links oficiales) ─────────
 
 // ─── API Pública ──────────────────────────────────────────────────────────────
@@ -1317,6 +1517,7 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
         fetchStationsFromResRobot(safe),
         fetchStationsFromRenfe(safe),
         fetchStationsFromSNCF(safe),
+        fetchStationsFromIrishRail(safe),
     ]);
 
     const results: Station[] = [];
@@ -1369,6 +1570,8 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useResRobot   = isSwedishStation(fromId)  || isSwedishStation(toId);
     // Digitransit cubre toda la red VR finlandesa
     const useDigitransit = isFinnishStation(fromId) || isFinnishStation(toId);
+    // Irish Rail — solo rutas en tiempo real (sin dates futuras)
+    const useIrishRail = isIrishStation(fromId) || isIrishStation(toId);
     // NL (UIC 84) y SE doméstico → cubiertos por DB HAFAS internacional
 
     const promises: Promise<Route[]>[] = [];
@@ -1381,6 +1584,7 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     if (useRejse)     promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
     if (useResRobot)    promises.push(fetchRoutesFromResRobot(fromId, toId, validDate).catch(() => []));
     if (useDigitransit) promises.push(fetchRoutesFromDigitransit(fromId, toId, validDate).catch(() => []));
+    if (useIrishRail)   promises.push(fetchRoutesFromIrishRail(fromId, toId, validDate).catch(() => []));
 
 
     const results = await Promise.all(promises);

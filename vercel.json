@@ -12,6 +12,7 @@
     { "source": "/api-renfe-rt/:path*",   "destination": "https://gtfsrt.renfe.com/:path*" },
     { "source": "/api-renfe-ckan/:path*", "destination": "https://data.renfe.com/:path*" },
     { "source": "/api-renfe-gtfs/:path*", "destination": "https://ssl.renfe.com/:path*" },
+    { "source": "/api-irishrail/:path*",  "destination": "https://api.irishrail.ie/realtime/realtime.asmx/:path*" },
     { "source": "/(.*)",             "destination": "/index.html" }
   ],
   "headers": [

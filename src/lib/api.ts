@@ -235,16 +235,6 @@ const COUNTRY_OPERATORS: Record<string, { name: string; url: string }> = {
     'Lituania': { name: 'LTG Link', url: 'https://ltglink.lt/' },
 };
 
-/** Determina si un país tiene soporte de API real completo */
-export function isCountrySupported(country: string): boolean {
-    const supported = [
-        'Alemania', 'Suiza', 'Austria', 'Bélgica', 'España', 'Francia', 'Italia', 'Países Bajos', 'Portugal',
-        'Polonia', 'Rep. Checa', 'Hungría', 'Suecia', 'Noruega', 'Dinamarca', 'Luxemburgo', 'Finlandia',
-        'Rumanía', 'Bulgaria', 'Serbia', 'Grecia', 'Irlanda', 'Reino Unido'
-    ];
-    return supported.includes(country);
-}
-
 /** Obtiene el link oficial por nombre de país */
 export function getOfficialLinkByCountry(country: string) {
     return COUNTRY_OPERATORS[country] || null;
@@ -840,23 +830,6 @@ export interface RenfeAlert {
     activeSince: Date;
 }
 
-export interface RenfeVehiclePosition {
-    id: string;
-    tripId: string;
-    lat: number;
-    lng: number;
-    status: 'STOPPED_AT' | 'IN_TRANSIT_TO' | string;
-    stopId: string;
-    vehicleLabel: string;
-    isLongDistance: boolean;
-}
-
-export interface RenfeTripDelay {
-    tripId: string;
-    delaySeconds: number;
-    isCancelled: boolean;
-}
-
 /** Fetch alertas de servicio en tiempo real (Cercanías + LD). Actualización cada 20s. */
 export async function fetchRenfeAlerts(): Promise<RenfeAlert[]> {
     try {
@@ -877,61 +850,6 @@ export async function fetchRenfeAlerts(): Promise<RenfeAlert[]> {
                 };
             })
             .filter((a: RenfeAlert | null): a is RenfeAlert => a !== null);
-    } catch {
-        return [];
-    }
-}
-
-/**
- * Fetch posiciones GPS de trenes en tiempo real.
- * @param ldOnly true = solo AVE/Larga Distancia; false = solo Cercanías
- */
-export async function fetchRenfeVehiclePositions(ldOnly = true): Promise<RenfeVehiclePosition[]> {
-    try {
-        const url = ldOnly
-            ? '/api-renfe-rt/vehicle_positions_LD.json'
-            : '/api-renfe-rt/vehicle_positions.json';
-        const res = await fetchWithTimeout(url, 8000);
-        if (!res.ok) return [];
-        const data = await res.json();
-        return (data.entity ?? [])
-            .map((e: any): RenfeVehiclePosition | null => {
-                const v = e.vehicle;
-                if (!v?.position?.latitude || !v?.position?.longitude) return null;
-                return {
-                    id: e.id,
-                    tripId: v.trip?.tripId ?? '',
-                    lat: v.position.latitude,
-                    lng: v.position.longitude,
-                    status: v.currentStatus ?? 'IN_TRANSIT_TO',
-                    stopId: v.stopId ?? '',
-                    vehicleLabel: v.vehicle?.label ?? '',
-                    isLongDistance: ldOnly,
-                };
-            })
-            .filter((v: RenfeVehiclePosition | null): v is RenfeVehiclePosition => v !== null);
-    } catch {
-        return [];
-    }
-}
-
-/**
- * Fetch retrasos de viajes en tiempo real.
- * @param ldOnly true = AVE/Larga Distancia; false = Cercanías
- */
-export async function fetchRenfeTripDelays(ldOnly = true): Promise<RenfeTripDelay[]> {
-    try {
-        const url = ldOnly
-            ? '/api-renfe-rt/trip_updates_LD.json'
-            : '/api-renfe-rt/trip_updates.json';
-        const res = await fetchWithTimeout(url, 8000);
-        if (!res.ok) return [];
-        const data = await res.json();
-        return (data.entity ?? []).map((e: any): RenfeTripDelay => ({
-            tripId: e.tripUpdate?.trip?.tripId ?? e.id,
-            delaySeconds: e.tripUpdate?.delay ?? 0,
-            isCancelled: e.tripUpdate?.trip?.scheduleRelationship === 'CANCELED',
-        }));
     } catch {
         return [];
     }

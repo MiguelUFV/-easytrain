@@ -175,25 +175,3 @@ export async function loginUser(
 export async function logoutUser(): Promise<void> {
     await signOut(auth);
 }
-
-/** Devuelve el número de emails cacheados localmente */
-export function getRegisteredUserCount(): number {
-    try {
-        const raw = localStorage.getItem(EMAILS_CACHE_KEY);
-        if (!raw) return 0;
-        return JSON.parse(raw).length;
-    } catch {
-        return 0;
-    }
-}
-
-/** Obtiene todos los emails cacheados (para debug) */
-export function getAllRegisteredEmails(): string[] {
-    try {
-        const raw = localStorage.getItem(EMAILS_CACHE_KEY);
-        if (!raw) return [];
-        return JSON.parse(raw);
-    } catch {
-        return [];
-    }
-}

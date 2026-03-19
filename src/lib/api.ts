@@ -21,7 +21,11 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  *  5. ÖBB (Austria)           → /api-oebb  — Austria completa (HAFAS v6, misma interfaz que DB)
  *  6. PKP (Polonia)           → /api-pkp   — Polonia completa (HAFAS v6, misma interfaz que DB)
  *  7. Rejseplansen (Dinamarca)→ /api-rejse — Dinamarca completa (HAFAS v6, misma interfaz que DB)
- *  8. NS (Países Bajos)       → vía /api-db — Estaciones UIC 84 cubiertas por HAFAS de DB
+ *  8. NS (Países Bajos)       → vía /api-db — UIC 84, cubierta por HAFAS de DB
+ *  9. ČD (Rep. Checa)        → vía /api-db + /api-oebb — DB cubre Praha-Berlin/Hamburg;
+ *                               ÖBB cubre el corredor Viena-Praga (ICs, RJs, ECs)
+ * 10. SJ (Suecia)            → vía /api-db + /api-rejse — DB cubre conexiones internacionales;
+ *                               Rejseplansen cubre el corredor Øresund (CPH↔Malmö↔Estocolmo)
  *  9. Renfe (España)          → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
  *                               → /api-renfe-rt  — GTFS-RT: alertas de servicio
  *
@@ -272,6 +276,12 @@ const isPolishStation = (id: string) => id.startsWith('51');
 
 /** Danish DSB station IDs — UIC prefix 86 */
 const isDanishStation = (id: string) => id.startsWith('86');
+
+/** Czech ČD station IDs — UIC prefix 54 */
+const isCzechStation = (id: string) => id.startsWith('54');
+
+/** Swedish SJ station IDs — UIC prefix 74 */
+const isSwedishStation = (id: string) => id.startsWith('74');
 
 /** UIC Country Prefixes */
 const UIC_COUNTRIES: Record<string, string> = {
@@ -1131,10 +1141,14 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useSBB     = isSwissStation(fromId)    || isSwissStation(toId);
     const useIrail   = isBelgianStation(fromId)  || isBelgianStation(toId);
     const useEntur   = isNorwegianStation(fromId) || isNorwegianStation(toId);
-    const useOEBB    = isAustrianStation(fromId) || isAustrianStation(toId);
+    // ÖBB cubre Austria + corredor Wien-Praha → activo también para Rep. Checa
+    const useOEBB    = isAustrianStation(fromId) || isAustrianStation(toId)
+                    || isCzechStation(fromId)    || isCzechStation(toId);
     const usePKP     = isPolishStation(fromId)   || isPolishStation(toId);
-    const useRejse   = isDanishStation(fromId)   || isDanishStation(toId);
-    // isDutchStation → cubierta por DB, no añade promesa adicional
+    // Rejseplansen cubre Dinamarca + corredor Øresund (CPH-Malmö-Estocolmo) → activo también para Suecia
+    const useRejse   = isDanishStation(fromId)   || isDanishStation(toId)
+                    || isSwedishStation(fromId)  || isSwedishStation(toId);
+    // NL (UIC 84) y SE doméstico → cubiertos por DB HAFAS internacional
 
     const promises: Promise<Route[]>[] = [];
     if (useDB)     promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));

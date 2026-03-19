@@ -242,9 +242,29 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'vendor': ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'zustand'],
+        manualChunks(id) {
+          // Firebase — heavy SDK, separate chunk que carga en paralelo al main
+          if (id.includes('/node_modules/firebase/') || id.includes('/node_modules/@firebase/')) {
+            return 'firebase';
+          }
+          // date-fns — librería de fechas, ~25 KB gzip
+          if (id.includes('/node_modules/date-fns/')) {
+            return 'date-fns';
+          }
+          // Three.js — solo se usa en /map (lazy)
+          if (id.includes('/node_modules/three') || id.includes('/node_modules/@react-three/')) {
+            return 'three';
+          }
+          // Vendor — librerías UI core
+          if (
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('/node_modules/react/') ||
+            id.includes('/node_modules/react-router') ||
+            id.includes('/node_modules/framer-motion/') ||
+            id.includes('/node_modules/zustand/')
+          ) {
+            return 'vendor';
+          }
         }
       }
     }

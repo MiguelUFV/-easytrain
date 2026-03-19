@@ -25,7 +25,7 @@ import { useI18n } from './lib/i18n';
 import type { Station, PassengerCounts, Station as StationType } from './types';
 import { trackPageView, analytics } from './lib/analytics';
 import { SEOHead } from './components/ui/SEOHead';
-import { RenfeAlertsPanel } from './components/ui/RenfeAlertsPanel';
+const RenfeAlertsPanel = lazy(() => import('./components/ui/RenfeAlertsPanel').then(m => ({ default: m.RenfeAlertsPanel })));
 
 // Lazy-loaded heavy pages
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
@@ -386,7 +386,9 @@ const Dashboard = () => {
           </div>
 
           {isSpanishRoute && (
-            <RenfeAlertsPanel className="mb-6" />
+            <Suspense fallback={null}>
+              <RenfeAlertsPanel className="mb-6" />
+            </Suspense>
           )}
 
           <div className="flex flex-col gap-3">

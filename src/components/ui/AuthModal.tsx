@@ -6,7 +6,7 @@ import { useToastStore } from './Toast';
 import { analytics } from '../../lib/analytics';
 import { registerUser, loginUser, isEmailRegistered } from '../../lib/auth';
 import { sendWelcomeEmail } from '../../lib/email';
-import { loadUserData, getCurrentUid } from '../../lib/firestore-sync';
+import { loadUserData, getCurrentUid, saveFavorites, savePriceAlerts, saveSearchHistory, saveSettings } from '../../lib/firestore-sync';
 
 type AuthTab = 'register' | 'login';
 
@@ -104,7 +104,6 @@ export const AuthModal = () => {
                 const uid = getCurrentUid();
                 if (uid) {
                     const state = useTrainStore.getState();
-                    const { saveFavorites, savePriceAlerts, saveSearchHistory, saveSettings } = await import('../../lib/firestore-sync');
                     await Promise.all([
                         state.favorites.length > 0 ? saveFavorites(uid, state.favorites) : Promise.resolve(),
                         state.priceAlerts.length > 0 ? savePriceAlerts(uid, state.priceAlerts) : Promise.resolve(),

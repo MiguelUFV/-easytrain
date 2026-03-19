@@ -11,6 +11,44 @@ export default defineConfig(({ mode }) => {
   plugins: [
     react(),
     tailwindcss(),
+    // Dev proxy para Digitransit — necesita POST GraphQL para rutas,
+    // por eso usamos middleware manual en vez del proxy estándar de Vite
+    {
+      name: 'digitransit-dev-proxy',
+      configureServer(server: any) {
+        server.middlewares.use('/api/digitransit', async (req: any, res: any, next: any) => {
+          const KEY = env.DIGITRANSIT_KEY ?? '';
+          if (!KEY) { next(); return; }
+          const url  = new URL(`http://localhost${req.url}`);
+          const type = url.searchParams.get('type');
+          const dtHeaders = { 'digitransit-subscription-key': KEY, 'Content-Type': 'application/json' };
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          try {
+            if (type === 'stations') {
+              const q = url.searchParams.get('q') ?? '';
+              const r = await fetch(
+                `https://api.digitransit.fi/geocoding/v1/autocomplete?text=${encodeURIComponent(q)}&size=10&sources=gtfsvr&layers=stop,station`,
+                { headers: dtHeaders }
+              );
+              res.end(await r.text());
+            } else if (type === 'routes') {
+              const fromLat = url.searchParams.get('fromLat') ?? '0';
+              const fromLon = url.searchParams.get('fromLon') ?? '0';
+              const toLat   = url.searchParams.get('toLat')   ?? '0';
+              const toLon   = url.searchParams.get('toLon')   ?? '0';
+              const date    = url.searchParams.get('date')    ?? '';
+              const time    = url.searchParams.get('time')    ?? '12:00:00';
+              const query = `{ plan(from:{lat:${fromLat},lon:${fromLon}} to:{lat:${toLat},lon:${toLon}} numItineraries:6 date:"${date}" time:"${time}" transportModes:[{mode:RAIL}]) { itineraries { duration startTime endTime legs { mode startTime endTime from { name stop { gtfsId } } to { name stop { gtfsId } } route { shortName longName agency { name } } intermediateStops { name arrivalTime departureTime stop { gtfsId } } } } } }`;
+              const r = await fetch('https://api.digitransit.fi/routing/v2/finland/gtfs/v1', {
+                method: 'POST', headers: dtHeaders, body: JSON.stringify({ query }),
+              });
+              res.end(await r.text());
+            } else { next(); }
+          } catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: String(e) })); }
+        });
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'maskable-icon.png'],

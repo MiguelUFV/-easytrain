@@ -26,6 +26,7 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  *                               ÖBB cubre el corredor Viena-Praga (ICs, RJs, ECs)
  * 10. SJ (Suecia)            → /api/resrobot — ResRobot v2.1 (Trafiklab) — red completa SJ;
  *                               + /api-rejse como complemento para el corredor Øresund
+ * 11. VR (Finlandia)         → /api/digitransit — Digitransit OTP2 GraphQL (misma interfaz que Entur)
  *  9. Renfe (España)          → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
  *                               → /api-renfe-rt  — GTFS-RT: alertas de servicio
  *
@@ -276,6 +277,9 @@ const isPolishStation = (id: string) => id.startsWith('51');
 
 /** Danish DSB station IDs — UIC prefix 86 */
 const isDanishStation = (id: string) => id.startsWith('86');
+
+/** Finnish VR station IDs — Digitransit prefix or UIC 10 */
+const isFinnishStation = (id: string) => id.startsWith('dt-fi-') || id.startsWith('10');
 
 /** Czech ČD station IDs — UIC prefix 54 */
 const isCzechStation = (id: string) => id.startsWith('54');
@@ -983,6 +987,112 @@ export async function fetchRenfeAlerts(): Promise<RenfeAlert[]> {
     }
 }
 
+// ─── API Digitransit (Finlandia — api.digitransit.fi OTP2 GraphQL) ───────────
+// Mismo paradigma que Entur (Noruega) — GraphQL OTP2.
+// Proxy en /api/digitransit — key solo en servidor (Vercel env var).
+// Dev: plugin Vite en vite.config.ts construye y reenvía la petición GraphQL.
+
+async function fetchStationsFromDigitransit(query: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(
+        `/api/digitransit?type=stations&q=${encodeURIComponent(query)}`, 8000
+    );
+    if (!res.ok) throw new Error(`Digitransit stations ${res.status}`);
+    const data = await res.json();
+
+    return (data.features ?? [])
+        .map((f: any) => {
+            const p = f.properties;
+            if (!p?.name) return null;
+            const id = `dt-fi-${p.id ?? p.gid}`;
+            const [lon, lat] = f.geometry?.coordinates ?? [0, 0];
+            const station: Station = {
+                id,
+                name: p.name,
+                city: p.localadmin ?? p.locality ?? 'Finlandia',
+                country: 'Finlandia',
+                coordinates: lat && lon ? { lat, lng: lon } : undefined,
+            };
+            cacheStationName(id, station.name);
+            if (lat && lon) cacheStationCoords(id, { latitude: lat, longitude: lon });
+            return station;
+        })
+        .filter((s: Station | null): s is Station => s !== null);
+}
+
+async function fetchRoutesFromDigitransit(fromId: string, toId: string, date?: string): Promise<Route[]> {
+    // OTP2 necesita coordenadas — obtenidas del cache cuando el usuario seleccionó la estación
+    const fromCoords = stationCoordsCache.get(fromId);
+    const toCoords   = stationCoordsCache.get(toId);
+    if (!fromCoords || !toCoords) return [];
+
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '12:00:00';
+    if (isToday) {
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        time = `${h}:${m}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+
+    const res = await fetchWithTimeout(
+        `/api/digitransit?type=routes&fromLat=${fromCoords.lat}&fromLon=${fromCoords.lng}&toLat=${toCoords.lat}&toLon=${toCoords.lng}&date=${searchDate}&time=${encodeURIComponent(time)}`,
+        12000
+    );
+    if (!res.ok) throw new Error(`Digitransit routes ${res.status}`);
+    const data = await res.json();
+    const itineraries: any[] = data?.data?.plan?.itineraries ?? [];
+    if (!itineraries.length) return [];
+
+    return itineraries.map((itin: any) => {
+        const legs: any[] = itin.legs ?? [];
+        if (!legs.length) return null;
+
+        const firstLeg = legs[0];
+        const lastLeg  = legs[legs.length - 1];
+        const depTime  = new Date(itin.startTime).toISOString();
+        const arrTime  = new Date(itin.endTime).toISOString();
+
+        const fromId2 = firstLeg.from?.stop?.gtfsId ? `dt-fi-${firstLeg.from.stop.gtfsId}` : fromId;
+        const toId2   = lastLeg.to?.stop?.gtfsId    ? `dt-fi-${lastLeg.to.stop.gtfsId}`    : toId;
+        cacheStationName(fromId2, firstLeg.from?.name ?? '');
+        cacheStationName(toId2,   lastLeg.to?.name   ?? '');
+
+        const operators = [...new Set<string>(
+            legs.map((l: any) => l.route?.agency?.name).filter(Boolean)
+        )];
+        const lineNames = legs.map((l: any) => l.route?.shortName ?? l.route?.longName ?? '').filter(Boolean);
+
+        const stops: Route['stops'] = legs.slice(0, -1).map((l: any, i: number) => ({
+            stationId: l.to?.stop?.gtfsId ? `dt-fi-${l.to.stop.gtfsId}` : '',
+            stationName: `🔄 Transbordo: ${l.to?.name ?? ''}`,
+            arrivalTime:   new Date(l.endTime).toISOString(),
+            departureTime: new Date(legs[i + 1]?.startTime ?? l.endTime).toISOString(),
+            isTransfer: true,
+        }));
+
+        return buildRoute({
+            id: `dt-fi-${fromId}-${toId}-${itin.startTime}`,
+            fromStationId: fromId,
+            toStationId:   toId,
+            fromStationName: firstLeg.from?.name ?? resolveStationName(fromId),
+            toStationName:   lastLeg.to?.name    ?? resolveStationName(toId),
+            fromCoords: null,
+            toCoords:   null,
+            departureTime: depTime,
+            arrivalTime:   arrTime,
+            price:    undefined,
+            operator: operators.join(' → ') || 'VR',
+            type: legs.length > 1 ? `${legs.length} tramos` : (firstLeg.mode ?? 'RAIL'),
+            platform:  undefined,
+            delay:     0,
+            lineName:  lineNames.join(' → '),
+            legs:      legs.length,
+            stops,
+        });
+    }).filter((r: Route | null): r is Route => r !== null);
+}
+
 // ─── API ResRobot (Suecia — Trafiklab v2.1) ───────────────────────────────────
 // Proxy en /api/resrobot — la key vive solo en el servidor (Vercel env var).
 // Dev: Vite proxy en vite.config.ts transforma la petición y añade la key.
@@ -1203,6 +1313,7 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
         fetchStationsFromOEBB(safe),
         fetchStationsFromPKP(safe),
         fetchStationsFromRejse(safe),
+        fetchStationsFromDigitransit(safe),
         fetchStationsFromResRobot(safe),
         fetchStationsFromRenfe(safe),
         fetchStationsFromSNCF(safe),
@@ -1255,7 +1366,9 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const useRejse    = isDanishStation(fromId)  || isDanishStation(toId)
                      || isSwedishStation(fromId) || isSwedishStation(toId);
     // ResRobot cubre toda la red ferroviaria sueca (SJ, regional, etc.)
-    const useResRobot = isSwedishStation(fromId) || isSwedishStation(toId);
+    const useResRobot   = isSwedishStation(fromId)  || isSwedishStation(toId);
+    // Digitransit cubre toda la red VR finlandesa
+    const useDigitransit = isFinnishStation(fromId) || isFinnishStation(toId);
     // NL (UIC 84) y SE doméstico → cubiertos por DB HAFAS internacional
 
     const promises: Promise<Route[]>[] = [];
@@ -1266,7 +1379,8 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     if (useOEBB)   promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
     if (usePKP)    promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
     if (useRejse)     promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
-    if (useResRobot)  promises.push(fetchRoutesFromResRobot(fromId, toId, validDate).catch(() => []));
+    if (useResRobot)    promises.push(fetchRoutesFromResRobot(fromId, toId, validDate).catch(() => []));
+    if (useDigitransit) promises.push(fetchRoutesFromDigitransit(fromId, toId, validDate).catch(() => []));
 
 
     const results = await Promise.all(promises);

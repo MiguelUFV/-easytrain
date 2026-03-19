@@ -204,6 +204,42 @@ export default defineConfig({
           });
         },
       },
+      '/api-oebb': {
+        target: 'https://v6.oebb.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-oebb/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => { console.log('proxy error (ÖBB)', err); });
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
+            proxyReq.setHeader('User-Agent', 'EasyTrain/2.5 (train-planner)');
+          });
+        },
+      },
+      '/api-pkp': {
+        target: 'https://v6.pkp.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-pkp/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => { console.log('proxy error (PKP)', err); });
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
+            proxyReq.setHeader('User-Agent', 'EasyTrain/2.5 (train-planner)');
+          });
+        },
+      },
+      '/api-rejse': {
+        target: 'https://v6.rejseplansen.transport.rest',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api-rejse/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => { console.log('proxy error (Rejse)', err); });
+          proxy.on('proxyReq', (proxyReq, _req, _res) => {
+            proxyReq.setHeader('User-Agent', 'EasyTrain/2.5 (train-planner)');
+          });
+        },
+      },
       '/api-renfe-rt': {
         target: 'https://gtfsrt.renfe.com',
         changeOrigin: true,

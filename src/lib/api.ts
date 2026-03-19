@@ -14,15 +14,18 @@ function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Re
  * api.ts — Capa de datos multi-API para trenes europeos
  *
  * APIs gratuitas integradas:
- *  1. DB (Deutsche Bahn) v6   → /api-db    — Alemania + conexiones internacionales (toda Europa)
+ *  1. DB (Deutsche Bahn) v6   → /api-db    — Alemania + toda Europa vía HAFAS internacional
  *  2. SBB (Suiza)             → /api-ch    — Suiza completa (transport.opendata.ch)
  *  3. iRail (Bélgica)         → /api-irail — Bélgica completa (NMBS/SNCB)
  *  4. Entur (Noruega)          → api.entur.io — Transporte público noruego (gratis, sin registro)
- *  5. Renfe (España)           → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
- *                               → /api-renfe-rt  — GTFS-RT: alertas, posiciones, retrasos
- *                               → /api-renfe-gtfs — Horarios estáticos GTFS (AVE+LD+cercanías)
+ *  5. ÖBB (Austria)           → /api-oebb  — Austria completa (HAFAS v6, misma interfaz que DB)
+ *  6. PKP (Polonia)           → /api-pkp   — Polonia completa (HAFAS v6, misma interfaz que DB)
+ *  7. Rejseplansen (Dinamarca)→ /api-rejse — Dinamarca completa (HAFAS v6, misma interfaz que DB)
+ *  8. NS (Países Bajos)       → vía /api-db — Estaciones UIC 84 cubiertas por HAFAS de DB
+ *  9. Renfe (España)          → /api-renfe-ckan — Estaciones CKAN (AVE+LD+cercanías 6 redes)
+ *                               → /api-renfe-rt  — GTFS-RT: alertas de servicio
  *
- * Fallback: mock data + deep-link a web oficial del operador
+ * Fallback: deep-link a web oficial del operador
  */
 
 // ─── Caché de nombres y coordenadas ──────────────────────────────────────────
@@ -261,6 +264,15 @@ const isBelgianStation = (id: string) => id.includes('irail') || id.startsWith('
 /** Norwegian station IDs — Entur uses NSR: prefix */
 const isNorwegianStation = (id: string) => id.startsWith('NSR:') || id.startsWith('entur-');
 
+/** Austrian ÖBB station IDs — UIC prefix 81 */
+const isAustrianStation = (id: string) => id.startsWith('81');
+
+/** Polish PKP station IDs — UIC prefix 51 */
+const isPolishStation = (id: string) => id.startsWith('51');
+
+/** Danish DSB station IDs — UIC prefix 86 */
+const isDanishStation = (id: string) => id.startsWith('86');
+
 /** UIC Country Prefixes */
 const UIC_COUNTRIES: Record<string, string> = {
     '80': 'Alemania',
@@ -393,6 +405,25 @@ async function fetchStationsFromSNCF(query: string): Promise<Station[]> {
     }
 }
 
+// ─── Normalización de códigos de país de APIs HAFAS ──────────────────────────
+// DB y otras APIs HAFAS devuelven country como código ISO 2 letras
+
+const HAFAS_COUNTRY_CODES: Record<string, string> = {
+    'DE': 'Alemania',    'AT': 'Austria',      'CH': 'Suiza',        'BE': 'Bélgica',
+    'NL': 'Países Bajos','FR': 'Francia',      'IT': 'Italia',       'ES': 'España',
+    'PL': 'Polonia',     'CZ': 'Rep. Checa',   'HU': 'Hungría',      'DK': 'Dinamarca',
+    'SE': 'Suecia',      'NO': 'Noruega',      'PT': 'Portugal',     'LU': 'Luxemburgo',
+    'GB': 'Reino Unido', 'IE': 'Irlanda',      'RO': 'Rumanía',      'BG': 'Bulgaria',
+    'RS': 'Serbia',      'HR': 'Croacia',      'SI': 'Eslovenia',    'SK': 'Eslovaquia',
+    'FI': 'Finlandia',   'GR': 'Grecia',       'TR': 'Turquía',
+};
+
+function resolveCountry(isoCode: string | undefined, stationId: string): string {
+    if (isoCode && HAFAS_COUNTRY_CODES[isoCode]) return HAFAS_COUNTRY_CODES[isoCode];
+    const fromUic = getCountryFromId(stationId);
+    return fromUic !== 'Europa' ? fromUic : 'Europa';
+}
+
 // ─── API DB (Deutsche Bahn) ───────────────────────────────────────────────────
 
 async function fetchStationsFromDB(query: string): Promise<Station[]> {
@@ -402,11 +433,12 @@ async function fetchStationsFromDB(query: string): Promise<Station[]> {
     return data
         .filter((loc: any) => loc.type === 'station')
         .map((loc: any) => {
+            const id = String(loc.id);
             const station: Station = {
-                id: String(loc.id),
+                id,
                 name: loc.name,
                 city: loc.address?.city ?? loc.name.split(',')[0],
-                country: loc.address?.country ?? 'Europa',
+                country: resolveCountry(loc.address?.country, id),
                 coordinates: loc.location
                     ? { lat: loc.location.latitude, lng: loc.location.longitude }
                     : undefined,
@@ -767,6 +799,92 @@ async function fetchRoutesFromEntur(fromId: string, toId: string, date?: string)
     }).filter(Boolean) as Route[];
 }
 
+// ─── HAFAS v6 genérico (ÖBB / PKP / Rejseplansen / cualquier transport.rest) ─
+// Todos comparten la misma interfaz REST que DB v6. Reutilizamos el mismo parser.
+
+async function fetchStationsFromHAFASv6(proxy: string, query: string, defaultCountry: string): Promise<Station[]> {
+    const res = await fetchWithTimeout(`${proxy}/locations?query=${encodeURIComponent(query)}&results=8&fuzzy=true`);
+    if (!res.ok) throw new Error(`HAFAS ${proxy} ${res.status}`);
+    const data: any[] = await res.json();
+    return data
+        .filter((loc: any) => loc.type === 'station')
+        .map((loc: any) => {
+            const id = String(loc.id);
+            const station: Station = {
+                id,
+                name: loc.name,
+                city: loc.address?.city ?? loc.name,
+                country: resolveCountry(loc.address?.country, id) !== 'Europa'
+                    ? resolveCountry(loc.address?.country, id)
+                    : defaultCountry,
+                coordinates: loc.location
+                    ? { lat: loc.location.latitude, lng: loc.location.longitude }
+                    : undefined,
+            };
+            cacheStationName(id, station.name);
+            return station;
+        });
+}
+
+async function fetchRoutesFromHAFASv6(proxy: string, fromId: string, toId: string, date: string | undefined, operatorFallback: string): Promise<Route[]> {
+    const now = new Date();
+    const isToday = !date || date === now.toISOString().split('T')[0];
+    let time = '12:00:00';
+    if (isToday) {
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        time = `${h}:${m}:00`;
+    }
+    const searchDate = date && isValidDate(date) ? date : now.toISOString().split('T')[0];
+    const url = `${proxy}/journeys?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&results=8&stopovers=true&departure=${encodeURIComponent(`${searchDate}T${time}`)}`;
+    const res = await fetchWithTimeout(url);
+    if (!res.ok) throw new Error(`HAFAS ${proxy} ${res.status}`);
+    const data = await res.json();
+    if (!data?.journeys?.length) return [];
+
+    const tag = proxy.replace('/api-', '');
+    return data.journeys.map((j: any) => {
+        const legs = j.legs.filter((l: any) => l.origin && l.destination);
+        if (!legs.length) return null;
+        const first = legs[0];
+        const last  = legs[legs.length - 1];
+        const stops = buildStopsFromLegs(legs);
+        const operators = [...new Set<string>(legs.map((l: any) => l.line?.operator?.name || l.line?.name).filter(Boolean))];
+        const lineNames  = legs.map((l: any) => l.line?.name || l.line?.id).filter(Boolean);
+        const stableId   = j.refreshToken || `${tag}-${first.origin.id}-${last.destination.id}-${first.departure}`;
+        cacheStationName(first.origin.id, first.origin.name);
+        cacheStationName(last.destination.id, last.destination.name);
+        return buildRoute({
+            id: stableId,
+            fromStationId: String(first.origin.id),
+            toStationId: String(last.destination.id),
+            fromStationName: first.origin.name,
+            toStationName: last.destination.name,
+            fromCoords: first.origin.location,
+            toCoords: last.destination.location,
+            departureTime: first.departure,
+            arrivalTime: last.arrival,
+            price: j.price?.amount,
+            operator: operators.join(' → ') || operatorFallback,
+            type: legs.length > 1 ? `${legs.length} tramos` : (first.line?.product || 'Train'),
+            platform: first.departurePlatform,
+            delay: first.departureDelay ? Math.floor(first.departureDelay / 60) : 0,
+            lineName: lineNames.join(' → '),
+            legs: legs.length,
+            stops,
+        });
+    }).filter(Boolean) as Route[];
+}
+
+// Thin wrappers por operador
+const fetchStationsFromOEBB  = (q: string) => fetchStationsFromHAFASv6('/api-oebb',  q, 'Austria');
+const fetchStationsFromPKP   = (q: string) => fetchStationsFromHAFASv6('/api-pkp',   q, 'Polonia');
+const fetchStationsFromRejse = (q: string) => fetchStationsFromHAFASv6('/api-rejse', q, 'Dinamarca');
+
+const fetchRoutesFromOEBB  = (f: string, t: string, d?: string) => fetchRoutesFromHAFASv6('/api-oebb',  f, t, d, 'ÖBB');
+const fetchRoutesFromPKP   = (f: string, t: string, d?: string) => fetchRoutesFromHAFASv6('/api-pkp',   f, t, d, 'PKP');
+const fetchRoutesFromRejse = (f: string, t: string, d?: string) => fetchRoutesFromHAFASv6('/api-rejse', f, t, d, 'DSB');
+
 // ─── API Renfe (España — data.renfe.com CKAN open data) ─────────────────────
 // Portal de datos abiertos de Renfe. Estaciones por región.
 // No tiene journey planner API — las rutas se buscan vía DB HAFAS (conexiones internacionales)
@@ -960,12 +1078,16 @@ export async function fetchStations(query: string = ''): Promise<Station[]> {
     const safe = sanitizeQuery(query);
     if (safe.length < 2) return FALLBACK_STATIONS;
 
-    // Lanzar las 6 APIs verificadas en paralelo; usar las que respondan
+    // Lanzar todas las APIs verificadas en paralelo; usar las que respondan
+    // NL (UIC 84) está cubierta por DB HAFAS — no necesita API dedicada
     const apiResults = await Promise.allSettled([
         fetchStationsFromDB(safe),
         fetchStationsFromSBB(safe),
         fetchStationsFromIrail(safe),
         fetchStationsFromEntur(safe),
+        fetchStationsFromOEBB(safe),
+        fetchStationsFromPKP(safe),
+        fetchStationsFromRejse(safe),
         fetchStationsFromRenfe(safe),
         fetchStationsFromSNCF(safe),
     ]);
@@ -1004,16 +1126,24 @@ export async function fetchRoutes(fromId?: string, toId?: string, date?: string)
     const validDate = date && isValidDate(date) ? date : undefined;
 
     // Determinar qué APIs usar según el origen/destino
-    const useDB      = true; // siempre intentamos DB (cubre toda Europa)
-    const useSBB     = isSwissStation(fromId) || isSwissStation(toId);
-    const useIrail   = isBelgianStation(fromId) || isBelgianStation(toId);
+    // DB siempre activo — cubre Europa internacional + NL (UIC 84) completa
+    const useDB      = true;
+    const useSBB     = isSwissStation(fromId)    || isSwissStation(toId);
+    const useIrail   = isBelgianStation(fromId)  || isBelgianStation(toId);
     const useEntur   = isNorwegianStation(fromId) || isNorwegianStation(toId);
+    const useOEBB    = isAustrianStation(fromId) || isAustrianStation(toId);
+    const usePKP     = isPolishStation(fromId)   || isPolishStation(toId);
+    const useRejse   = isDanishStation(fromId)   || isDanishStation(toId);
+    // isDutchStation → cubierta por DB, no añade promesa adicional
 
     const promises: Promise<Route[]>[] = [];
     if (useDB)     promises.push(fetchRoutesFromDB(fromId, toId, validDate).catch(() => []));
     if (useSBB)    promises.push(fetchRoutesFromSBB(stationNameCache.get(fromId) ?? fromId, stationNameCache.get(toId) ?? toId, validDate).catch(() => []));
     if (useIrail)  promises.push(fetchRoutesFromIrail(fromId, toId, validDate).catch(() => []));
     if (useEntur)  promises.push(fetchRoutesFromEntur(fromId, toId, validDate).catch(() => []));
+    if (useOEBB)   promises.push(fetchRoutesFromOEBB(fromId, toId, validDate).catch(() => []));
+    if (usePKP)    promises.push(fetchRoutesFromPKP(fromId, toId, validDate).catch(() => []));
+    if (useRejse)  promises.push(fetchRoutesFromRejse(fromId, toId, validDate).catch(() => []));
 
 
     const results = await Promise.all(promises);
